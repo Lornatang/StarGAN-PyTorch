@@ -1,0 +1,84 @@
+# experiment name
+EXP_NAME: StarGAN-CelebA
+# random number seed
+SEED: 0
+# run device model
+DEVICE_ID: 0
+
+# Model define
+MODEL:
+  EMA:
+    ENABLE: True
+    DECAY: 0.999
+    COMPILED: True
+  G:
+    NAME: generator
+    IN_CHANNELS: 3
+    OUT_CHANNELS: 3
+    CHANNELS: 64
+    LABEL_CHANNELS: 5
+    NUM_RCB: 6
+    COMPILED: True
+  D:
+    NAME: path_discriminator
+    IMAGE_SIZE: 128
+    IN_CHANNELS: 3
+    OUT_CHANNELS: 3
+    CHANNELS: 64
+    LABEL_CHANNELS: 5
+    NUM_BLOCKS: 6
+    COMPILED: False
+
+TRAIN:
+  DATASET:
+    IMAGES_DIR: ./data/celeba/images
+    CROP_IMAGE_SIZE: 178
+    RESIZE_IMAGE_SIZE: 128
+    ATTR_PATH: ./data/celeba/list_attr_celeba.txt
+    SELECTED_ATTRS: ["Black_Hair", "Blond_Hair", "Brown_Hair", "Male", "Young"]
+
+  # Model file address, used for pre-training and recovery training
+  CHECKPOINT:
+    PRETRAINED_G_MODEL: ""
+    PRETRAINED_D_MODEL: ""
+    RESUMED_G_MODEL: ""
+    RESUMED_D_MODEL: ""
+
+  # training hyperparameters
+  HYP:
+    IMGS_PER_BATCH: 16
+    SHUFFLE: True
+    NUM_WORKERS: 4
+    PIN_MEMORY: True
+    PERSISTENT_WORKERS: True
+
+    EPOCHS: 16
+
+  OPTIM:
+    NAME: Adam
+    LR: 0.0001
+    BETAS: [ 0.5, 0.999 ]
+    EPS: 0.0001
+    WEIGHT_DECAY: 0.0
+
+  N_CRITIC: 5  # Update D every n_critic iterations
+
+  LR_SCHEDULER:
+    NAME: StepLR
+    STEP_SIZE: [ 8 ]
+    GAMMA: 0.5
+
+  # Loss function
+  LOSSES:
+    CLASSIFICATION_LOSS:
+      NAME: binary_cross_entropy_with_logits
+      WEIGHT: [ 10.0 ]
+      MEAN: False
+    GRADIENT_LOSS:
+      NAME: gradient_penalty
+      WEIGHT: [ 10.0 ]
+    REC_LOSS:
+      NAME: l1
+      WEIGHT: [ 10.0 ]
+
+  PRINT_FREQ: 100
