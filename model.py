@@ -53,7 +53,7 @@ class Generator(nn.Module):
             channels: int,
             label_channels: int,
             num_rcb: int,
-    ):
+    ) -> None:
         super(Generator, self).__init__()
         self.first_layer = nn.Sequential(
             nn.Conv2d(in_channels + label_channels, channels, (7, 7), (1, 1), (3, 3), bias=False),
