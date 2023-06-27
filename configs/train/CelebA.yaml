@@ -72,8 +72,8 @@ TRAIN:
   LOSSES:
     CLASSIFICATION_LOSS:
       NAME: binary_cross_entropy_with_logits
-      WEIGHT: [ 10.0 ]
-      MEAN: False
+      WEIGHT: [ 1.0 ]
+      MEAN: True
     GRADIENT_LOSS:
       NAME: gradient_penalty
       WEIGHT: [ 10.0 ]
