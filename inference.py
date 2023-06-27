@@ -117,7 +117,7 @@ if __name__ == "__main__":
                         help="Whether to compile the model state.")
     parser.add_argument("--model_weights_path",
                         type=str,
-                        default="./StarGAN-CelebA-256x256.pth.tar",
+                        default="./results/pretrained_models/StarGAN-CelebA-256x256.pth.tar",
                         help="Model weights file path.")
     parser.add_argument("--half",
                         action="store_true",
