@@ -65,7 +65,7 @@ TRAIN:
 
   LR_SCHEDULER:
     NAME: StepLR
-    STEP_SIZE: [ 8 ]
+    STEP_SIZE: 8
     GAMMA: 0.5
 
   # Loss function
