@@ -25,12 +25,12 @@ from torch.nn import Module
 from torch.optim import Optimizer
 
 __all__ = [
-    "label2onehot", "load_state_dict", "load_pretrained_state_dict", "load_resume_state_dict", "make_directory", "save_checkpoint",
+    "create_labels", "label2onehot", "load_state_dict", "load_pretrained_state_dict", "load_resume_state_dict", "make_directory", "save_checkpoint",
     "Summary", "AverageMeter", "ProgressMeter",
 ]
 
 
-def create_labels(original_color: Tensor, label_channels: int = 5, selected_attrs: str = None) -> list[Any]:
+def create_labels(original_color: Tensor, label_channels: int = 5, selected_attrs: list = None) -> list[Any]:
     """Generate target domain labels for debugging and testing."""
     # Get hair color indices.
     hair_color_indices = []
@@ -40,16 +40,16 @@ def create_labels(original_color: Tensor, label_channels: int = 5, selected_attr
 
     target_color_list = []
     for i in range(label_channels):
-        c_trg = original_color.clone()
+        target_color = original_color.clone()
         if i in hair_color_indices:  # Set one hair color to 1 and the rest to 0.
-            c_trg[:, i] = 1
+            target_color[:, i] = 1
             for j in hair_color_indices:
                 if j != i:
-                    c_trg[:, j] = 0
+                    target_color[:, j] = 0
         else:
-            c_trg[:, i] = (c_trg[:, i] == 0)  # Reverse attribute value.
+            target_color[:, i] = (target_color[:, i] == 0)  # Reverse attribute value.
 
-        target_color_list.append(c_trg.to(original_color.device))
+        target_color_list.append(target_color.to(original_color.device))
 
     return target_color_list
 
