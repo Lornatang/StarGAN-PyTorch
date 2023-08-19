@@ -33,7 +33,7 @@ Please refer to `README.md` in the `data` directory for the method of making a d
 ### Train StarGAN-CelebA-128x128
 
 ```bash
-python3 train.py --config_path ./configs/CelebA.yaml
+python3 train.py --config_path ./configs/train/CelebA.yaml
 ```
 
 ### Resume train StarGAN-CelebA-128x128
@@ -44,7 +44,7 @@ Modify the `./configs/CelebA.yaml` file.
 - line 45: `RESUMED_G_MODEL` change to `samples/StarGAN-CelebA-128x128/g_epoch_XXX.pth.tar`.
 
 ```bash
-python3 train.py --config_path ./configs/CelebA.yaml
+python3 train.py --config_path ./configs/train/CelebA.yaml
 ```
 
 ## Result
