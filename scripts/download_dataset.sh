@@ -10,5 +10,6 @@ if [ "$FILE" == "StarGAN_CelebA" ]; then
   rm $ZIP_FILE
 else
   echo "Available arguments are StarGAN_CelebA."
+  echo "Example: bash ./scripts/download_dataset.sh StarGAN_CelebA"
   exit 1
 fi
