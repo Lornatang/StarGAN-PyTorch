@@ -142,7 +142,7 @@ def load_resume_state_dict(
         scheduler: Any,
         compile_state: bool,
         model_weights_path: str,
-) -> tuple[Any, Module | None | Any, Any, Optimizer, Any] | tuple[Any, Module | None | Any, Any, Optimizer]:
+) -> Any:
     """Restore training model weights
 
     Args:
