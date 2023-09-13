@@ -137,7 +137,7 @@ def load_pretrained_state_dict(
 
 def load_resume_state_dict(
         model: nn.Module,
-        ema_model: nn.Module | None,
+        ema_model: Any,
         optimizer: Optimizer,
         scheduler: Any,
         compile_state: bool,
