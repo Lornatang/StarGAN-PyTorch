@@ -23,7 +23,7 @@ MODEL:
     NAME: path_discriminator
     IMAGE_SIZE: 128
     IN_CHANNELS: 3
-    OUT_CHANNELS: 3
+    OUT_CHANNELS: 1
     CHANNELS: 64
     LABEL_CHANNELS: 5
     NUM_BLOCKS: 6
