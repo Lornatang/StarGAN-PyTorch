@@ -48,11 +48,11 @@ class _ResidualConvBlock(nn.Module):
 class Generator(nn.Module):
     def __init__(
             self,
-            in_channels: int,
-            out_channels: int,
-            channels: int,
-            label_channels: int,
-            num_rcb: int,
+            in_channels: int = 3,
+            out_channels: int = 3,
+            channels: int = 64,
+            label_channels: int = 5,
+            num_rcb: int = 6,
     ) -> None:
         super(Generator, self).__init__()
         self.first_layer = nn.Sequential(
@@ -106,12 +106,12 @@ class Generator(nn.Module):
 class PathDiscriminator(nn.Module):
     def __init__(
             self,
-            image_size: int,
-            in_channels: int,
-            out_channels: int,
-            channels: int,
-            label_channels: int,
-            num_blocks: int,
+            image_size: int = 128,
+            in_channels: int = 3,
+            out_channels: int = 1,
+            channels: int = 64,
+            label_channels: int = 5,
+            num_blocks: int = 6,
     ):
         super(PathDiscriminator, self).__init__()
         main = [
