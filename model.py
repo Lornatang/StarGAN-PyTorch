@@ -26,6 +26,13 @@ __all__ = [
 
 class _ResidualConvBlock(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
+        """Residual Convolution Block
+
+        Args:
+            in_channels (int): The number of channels in the input image.
+            out_channels (int): The number of channels in the output image.
+
+        """
         super(_ResidualConvBlock, self).__init__()
         self.main = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, (3, 3), (1, 1), (1, 1), bias=False),
@@ -54,6 +61,16 @@ class Generator(nn.Module):
             label_channels: int = 5,
             num_rcb: int = 6,
     ) -> None:
+        """Generator of the Pix2Pix
+
+        Args:
+            in_channels (int, optional): The number of channels in the input image. Defaults: 3.
+            out_channels (int, optional): The number of channels in the output image. Defaults: 3.
+            channels (int, optional): The number of channels in all conv blocks. Defaults: 64.
+            label_channels (int, optional): The number of channels in the label image. Defaults: 5.
+            num_rcb (int, optional): The number of residual conv blocks in the generator. Defaults: 6.
+
+        """
         super(Generator, self).__init__()
         self.first_layer = nn.Sequential(
             nn.Conv2d(in_channels + label_channels, channels, (7, 7), (1, 1), (3, 3), bias=False),
@@ -112,7 +129,18 @@ class PathDiscriminator(nn.Module):
             channels: int = 64,
             label_channels: int = 5,
             num_blocks: int = 6,
-    ):
+    ) -> None:
+        """Discriminator of the PatchGAN
+
+        Args:
+            image_size (int, optional): The size of the input image. Defaults: 128.
+            in_channels (int, optional): The number of channels in the input image. Defaults: 3.
+            out_channels (int, optional): The number of channels in the output image. Defaults: 1.
+            channels (int, optional): The number of channels in all conv blocks. Defaults: 64.
+            label_channels (int, optional): The number of channels in the label image. Defaults: 5.
+            num_blocks (int, optional): The number of conv blocks in the discriminator. Defaults: 6.
+
+        """
         super(PathDiscriminator, self).__init__()
         main = [
             nn.Conv2d(in_channels, channels, (4, 4), (2, 2), (1, 1)),
@@ -144,7 +172,13 @@ class GradientPenaltyLoss(nn.Module):
         super(GradientPenaltyLoss, self).__init__()
 
     def forward(self, target: Tensor, source: Tensor) -> Tensor:
-        """Compute gradient penalty: (L2_norm(dy/dx) - 1)**2."""
+        """Compute gradient penalty: (L2_norm(dy/dx) - 1)**2.
+
+        Args:
+            target (Tensor): The output of the discriminator with respect to the real image.
+            source (Tensor): The output of the discriminator with respect to the fake image.
+
+        """
         weight = torch.ones(target.size(), device=target.device)
         dydx = torch.autograd.grad(outputs=target,
                                    inputs=source,
