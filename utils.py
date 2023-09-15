@@ -25,33 +25,54 @@ from torch.nn import Module
 from torch.optim import Optimizer
 
 __all__ = [
-    "create_labels", "label2onehot", "load_state_dict", "load_pretrained_state_dict", "load_resume_state_dict", "make_directory", "save_checkpoint",
-    "Summary", "AverageMeter", "ProgressMeter",
+    "create_labels", "denorm", "label2onehot", "load_state_dict", "load_pretrained_state_dict", "load_resume_state_dict", "make_directory",
+    "save_checkpoint", "Summary", "AverageMeter", "ProgressMeter",
 ]
 
 
-def create_labels(original_channels: Tensor, label_channels: int = 5, selected_attrs: list = None) -> list[Any]:
-    """Generate target domain labels for debugging and testing."""
+def create_labels(original_channels: Any, label_channels: int = 5, dataset: str = "CelebA", selected_attrs: list = None) -> list[Any]:
+    """Generate target domain labels for debugging and testing.
+
+    Args:
+        original_channels (Any): original channels
+        label_channels (int, optional): label channels. Default: 5.
+        dataset (str, optional): dataset name. Default: "CelebA".
+        selected_attrs (list, optional): selected attributes. Default: None.
+
+    """
     # Get hair color indices.
-    hair_color_indices = []
-    for i, attr_name in enumerate(selected_attrs):
-        if attr_name in ["Black_Hair", "Blond_Hair", "Brown_Hair", "Gray_Hair"]:
-            hair_color_indices.append(i)
+    hair_colors = []
+    if dataset == "CelebA":
+        for i, attr_name in enumerate(selected_attrs):
+            if attr_name in ["Black_Hair", "Blond_Hair", "Brown_Hair", "Gray_Hair"]:
+                hair_colors.append(i)
 
-    target_color_list = []
-    for i in range(label_channels):
-        target_channels = original_channels.clone()
-        if i in hair_color_indices:  # Set one hair color to 1 and the rest to 0.
-            target_channels[:, i] = 1
-            for j in hair_color_indices:
-                if j != i:
-                    target_channels[:, j] = 0
-        else:
-            target_channels[:, i] = (target_channels[:, i] == 0)  # Reverse attribute value.
+    target_channels_list = []
+    target_channels = None
+    for label_channel in range(label_channels):
+        if dataset == "CelebA":
+            target_channels = original_channels.clone()
+            if label_channel in hair_colors:  # Set one hair color to 1 and the rest to 0.
+                target_channels[:, label_channel] = 1
+                for hair_color in hair_colors:
+                    if hair_color != label_channel:
+                        target_channels[:, hair_color] = 0
+            else:
+                target_channels[:, label_channel] = (target_channels[:, label_channel] == 0)  # Reverse attribute value.
+        elif dataset == "RaFD":
+            target_channels = label2onehot(torch.ones(original_channels.size(0)) * label_channel, label_channels)
 
-        target_color_list.append(target_channels.to(original_channels.device))
+        target_channels_list.append(target_channels.to(original_channels.device))
 
-    return target_color_list
+    return target_channels_list
+
+
+def denorm(x: Tensor) -> Tensor:
+    """Convert the range from [-1, 1] to [0, 1]."""
+    out = (x + 1) / 2
+    out = out.clamp_(0, 1)
+
+    return out
 
 
 def label2onehot(labels, dim):

@@ -14,99 +14,91 @@
 import argparse
 import os
 
-import cv2
 import torch
 import torch.nn as nn
+from torchvision.utils import save_image
 
-import model
-from imgproc import preprocess_one_image, tensor_to_image
-from utils import load_pretrained_state_dict
+from model import generator
+from imgproc import preprocess_one_image
+from utils import create_labels, denorm, load_pretrained_state_dict
 
 
 def main(args):
     device = torch.device(args.device)
 
     # Read original image
-    input_tensor = preprocess_one_image(args.inputs, True, args.half, device)
+    input_tensor = preprocess_one_image(args.inputs, args.image_size, device)
 
     # Initialize the model
-    g_model = build_model(args.model_arch_name, device)
-    print(f"Build `{args.model_arch_name}` model successfully.")
+    model = build_model(device)
 
     # Load model weights
-    g_model = load_pretrained_state_dict(g_model, args.compile_state, args.model_weights_path)
-    print(f"Load `{args.model_arch_name}` model weights `{os.path.abspath(args.model_weights_path)}` successfully.")
+    model = load_pretrained_state_dict(model, args.compile_state, args.model_weights_path)
+    print(f"Load `{os.path.abspath(args.model_weights_path)}` model weights successfully.")
 
     # Enable half-precision inference to reduce memory usage and inference time
     if args.half:
-        g_model.half()
+        model.half()
 
     # Create labels
     attr2idx = {}
-    for i, attr_name in enumerate(args.supported_attrs):
+    for i, attr_name in enumerate(args.supported_attrs_name):
         attr2idx[attr_name] = i
 
-    class_label = []
-    if args.selected_attrs == "":
-        raise ValueError(f"Attribute can not be empty.")
-
-    if args.selected_attrs not in args.supported_attrs:
-        raise ValueError(f"Attribute `{args.selected_attrs}` is not supported.")
-
-    for supported_attrs_iter in range(len(args.supported_attrs)):
-        index = attr2idx[args.selected_attrs]
-        if supported_attrs_iter == index:
+    original_channels = []
+    for attr_name in args.supported_attrs_name:
+        index = attr2idx[attr_name]
+        if attr_name == index:
             attr_label = 1
         else:
             attr_label = 0
-        class_label.append(attr_label)
+        original_channels.append(attr_label)
 
-    class_label = torch.FloatTensor([class_label])
-    class_label = class_label.to(device, non_blocking=True)
+    original_channels = torch.FloatTensor([original_channels])
+    original_channels = original_channels.to(device, non_blocking=True)
+    labels = create_labels(original_channels, len(args.supported_attrs_name), args.dataset, args.supported_attrs_name)
 
     # Inference
     with torch.no_grad():
-        output_tensor = g_model(input_tensor, class_label)
+        output_tensor = [input_tensor]
+        for label in labels:
+            output_tensor.append(model(input_tensor, label))
 
     # Save image
-    output_image = tensor_to_image(output_tensor, True, args.half)
-    output_image = cv2.cvtColor(output_image, cv2.COLOR_RGB2BGR)
-    cv2.imwrite(args.output, output_image)
-
+    x_concat = torch.cat(output_tensor, dim=3)
+    save_image(denorm(x_concat.data.cpu()), args.output, nrows=1, padding=0)
     print(f"StarGAN image save to `{args.output}`")
 
 
-def build_model(model_arch_name: str, device: torch.device) -> nn.Module:
-    # Initialize the super-resolution model
-    g_model = model.__dict__[model_arch_name]()
+def build_model(device: torch.device) -> nn.Module:
+    model = generator()
+    model = model.to(device)
 
-    g_model = g_model.to(device)
-
-    return g_model
+    return model
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--inputs",
+    parser.add_argument("-i", "--inputs",
                         type=str,
-                        default="./figure/Input.jpg",
+                        default="./figure/example1.jpg",
                         help="Original image path.")
-    parser.add_argument("--output",
+    parser.add_argument("--image_size",
+                        type=int,
+                        default=128,
+                        help="Image size.")
+    parser.add_argument("-o", "--output",
                         type=str,
-                        default="./figure/Input_Blond_Hair.jpg",
+                        default="./figure/results_example1.jpg",
                         help="StarGAN image path.")
-    parser.add_argument("--supported_attrs",
+    parser.add_argument("--dataset",
+                        type=str,
+                        default="CelebA",
+                        help="Dataset name.")
+    parser.add_argument("--supported_attrs_name",
                         type=list,
                         default=["Black_Hair", "Blond_Hair", "Brown_Hair", "Male", "Young"],
                         help="Support all attributes name.")
-    parser.add_argument("--selected_attrs",
-                        type=str,
-                        default="Blond_Hair",
-                        help="Support all attributes name.")
-    parser.add_argument("--model_arch_name",
-                        type=str,
-                        default="generator",
-                        help="Model architecture name.")
     parser.add_argument("--compile_state",
                         type=bool,
                         default=False,
