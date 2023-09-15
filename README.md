@@ -49,9 +49,11 @@ python3 train.py --config_path ./configs/train/CelebA.yaml
 
 ## Result
 
-Input | Black_Hair | Blond_Hair | Brown_Hair | Male | Young
-
 <img src="figure/results_example1.jpg"/>
+<img src="figure/results_example2.jpg"/>
+<img src="figure/results_example3.jpg"/>
+<img src="figure/results_example4.jpg"/>
+<img src="figure/results_example5.jpg"/>
 
 ### Contributing
 
