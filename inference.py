@@ -78,11 +78,7 @@ def main(args):
 
 def build_model(model_arch_name: str, device: torch.device) -> nn.Module:
     # Initialize the super-resolution model
-    g_model = model.__dict__[model_arch_name](in_channels=3,
-                                              out_channels=3,
-                                              channels=64,
-                                              label_channels=5,
-                                              num_rcb=6)
+    g_model = model.__dict__[model_arch_name]()
 
     g_model = g_model.to(device)
 

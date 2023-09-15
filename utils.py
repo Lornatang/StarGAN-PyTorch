@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 
-def create_labels(original_color: Tensor, label_channels: int = 5, selected_attrs: list = None) -> list[Any]:
+def create_labels(original_channels: Tensor, label_channels: int = 5, selected_attrs: list = None) -> list[Any]:
     """Generate target domain labels for debugging and testing."""
     # Get hair color indices.
     hair_color_indices = []
@@ -40,16 +40,16 @@ def create_labels(original_color: Tensor, label_channels: int = 5, selected_attr
 
     target_color_list = []
     for i in range(label_channels):
-        target_color = original_color.clone()
+        target_channels = original_channels.clone()
         if i in hair_color_indices:  # Set one hair color to 1 and the rest to 0.
-            target_color[:, i] = 1
+            target_channels[:, i] = 1
             for j in hair_color_indices:
                 if j != i:
-                    target_color[:, j] = 0
+                    target_channels[:, j] = 0
         else:
-            target_color[:, i] = (target_color[:, i] == 0)  # Reverse attribute value.
+            target_channels[:, i] = (target_channels[:, i] == 0)  # Reverse attribute value.
 
-        target_color_list.append(target_color.to(original_color.device))
+        target_color_list.append(target_channels.to(original_channels.device))
 
     return target_color_list
 
