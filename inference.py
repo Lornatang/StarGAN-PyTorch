@@ -81,7 +81,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--inputs",
                         type=str,
-                        default="./figure/example5.jpg",
+                        default="./figure/celeba_example1.jpg",
                         help="Original image path.")
     parser.add_argument("--image_size",
                         type=int,
@@ -89,7 +89,7 @@ if __name__ == "__main__":
                         help="Image size.")
     parser.add_argument("-o", "--output",
                         type=str,
-                        default="./figure/results_example5.jpg",
+                        default="./figure/results_celeba_example1.jpg",
                         help="StarGAN image path.")
     parser.add_argument("--dataset",
                         type=str,
