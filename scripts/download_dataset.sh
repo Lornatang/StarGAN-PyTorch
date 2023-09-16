@@ -1,6 +1,6 @@
 FILE=$1
 
-if [ "$FILE" == "StarGAN_CelebA" ]; then
+if [ "$FILE" == "CelebA" ]; then
   # Download the imagenet dataset and move validation images to labeled subfolders
   URL="https://huggingface.co/datasets/goodfellowliu/StarGAN_CelebA/resolve/main/celeba.zip"
   ZIP_FILE=./data/celeba.zip
@@ -9,7 +9,7 @@ if [ "$FILE" == "StarGAN_CelebA" ]; then
   unzip $ZIP_FILE -d ./data
   rm $ZIP_FILE
 else
-  echo "Available arguments are StarGAN_CelebA."
-  echo "Example: bash ./scripts/download_dataset.sh StarGAN_CelebA"
+  echo "Available arguments are CelebA."
+  echo "Example: bash ./scripts/download_dataset.sh CelebA"
   exit 1
 fi

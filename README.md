@@ -11,8 +11,9 @@ This repository contains an op-for-op PyTorch reimplementation of [StarGAN: Unif
     - [Table of contents](#table-of-contents)
     - [Download weights](#download-weights)
     - [Download datasets](#download-datasets)
-    - [Train StarGAN-CelebA-128x128](#train-stargan-celeba-128x128)
-    - [Resume train StarGAN-CelebA-128x128](#resume-train-stargan-celeba-128x128)
+    - [How Test and Train](#how-test-and-train)
+      - [Train StarGAN-CelebA-128x128](#train-stargan-celeba-128x128)
+      - [Resume train StarGAN-CelebA-128x128](#resume-train-stargan-celeba-128x128)
     - [Result](#result)
     - [Contributing](#contributing)
     - [Credit](#credit)
@@ -20,31 +21,41 @@ This repository contains an op-for-op PyTorch reimplementation of [StarGAN: Unif
 
 ## Download weights
 
-- [Google Driver](https://drive.google.com/drive/folders/1L8cqGfONMx5cA7-iCJxvdeWdR8LigdyX?usp=sharing)
-- [Baidu Driver](https://pan.baidu.com/s/1rXS2NQwI_pI7zPJGXKAV4g?pwd=llot)
+```shell
+$ bash ./scripts/download_weights.sh StarGAN-CelebA-128x128
+```
 
 ## Download datasets
 
-- [Official Driver](https://www.dropbox.com/s/d1kjpkqklf0uw77/celeba.zip?dl=0)
-- [Baidu Driver](https://pan.baidu.com/s/1FKbeUVeXc8pvfU4363CSqA?pwd=llot)
+```shell
+$ bash ./scripts/download_dataset.sh CelebA
+```
 
 Please refer to `README.md` in the `data` directory for the method of making a dataset.
+
+## How Test and Train
+
+### Test one image
+
+```bash
+$ python3 inference.py
+```
 
 ### Train StarGAN-CelebA-128x128
 
 ```bash
-python3 train.py --config_path ./configs/train/CelebA.yaml
+python3 train.py --config_path ./configs/train/CelebA_128x128.yaml
 ```
 
 ### Resume train StarGAN-CelebA-128x128
 
-Modify the `./configs/CelebA.yaml` file.
+Modify the `./configs/train/CelebA_128x128.yaml` file.
 
 - line 44: `RESUMED_G_MODEL` change to `samples/StarGAN-CelebA-128x128/g_epoch_XXX.pth.tar`.
-- line 45: `RESUMED_G_MODEL` change to `samples/StarGAN-CelebA-128x128/g_epoch_XXX.pth.tar`.
+- line 45: `RESUMED_D_MODEL` change to `samples/StarGAN-CelebA-128x128/d_epoch_XXX.pth.tar`.
 
 ```bash
-python3 train.py --config_path ./configs/train/CelebA.yaml
+python3 train.py --config_path ./configs/train/CelebA_128x128.yaml
 ```
 
 ## Result
