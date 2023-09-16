@@ -60,11 +60,11 @@ python3 train.py --config_path ./configs/train/CelebA_128x128.yaml
 
 ## Result
 
-<img src="figure/results_example1.jpg"/>
-<img src="figure/results_example2.jpg"/>
-<img src="figure/results_example3.jpg"/>
-<img src="figure/results_example4.jpg"/>
-<img src="figure/results_example5.jpg"/>
+<img src="figure/results_celeba_example1.jpg"/>
+<img src="figure/results_celeba_example2.jpg"/>
+<img src="figure/results_celeba_example3.jpg"/>
+<img src="figure/results_celeba_example4.jpg"/>
+<img src="figure/results_celeba_example5.jpg"/>
 
 ### Contributing
 
