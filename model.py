@@ -35,21 +35,15 @@ class _ResidualConvBlock(nn.Module):
         """
         super(_ResidualConvBlock, self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, (3, 3), (1, 1), (1, 1), bias=False),
+            nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False),
             nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True),
             nn.ReLU(True),
 
-            nn.Conv2d(out_channels, out_channels, (3, 3), (1, 1), (1, 1), bias=False),
+            nn.Conv2d(out_channels, out_channels, 3, 1, 1, bias=False),
             nn.InstanceNorm2d(out_channels, affine=True, track_running_stats=True))
 
     def forward(self, x: Tensor) -> Tensor:
-        identity = x
-
-        x = self.main(x)
-
-        x = torch.add(x, identity)
-
-        return x
+        return self.main(x) + x
 
 
 class Generator(nn.Module):
@@ -58,8 +52,8 @@ class Generator(nn.Module):
             in_channels: int = 3,
             out_channels: int = 3,
             channels: int = 64,
-            label_channels: int = 5,
             num_rcb: int = 6,
+            c_dim: int = 5,
     ) -> None:
         """Generator of the Pix2Pix
 
@@ -67,22 +61,22 @@ class Generator(nn.Module):
             in_channels (int, optional): The number of channels in the input image. Defaults: 3.
             out_channels (int, optional): The number of channels in the output image. Defaults: 3.
             channels (int, optional): The number of channels in all conv blocks. Defaults: 64.
-            label_channels (int, optional): The number of channels in the label image. Defaults: 5.
             num_rcb (int, optional): The number of residual conv blocks in the generator. Defaults: 6.
+            c_dim (int, optional): The number of channels in the label image. Defaults: 5.
 
         """
         super(Generator, self).__init__()
         self.first_layer = nn.Sequential(
-            nn.Conv2d(in_channels + label_channels, channels, (7, 7), (1, 1), (3, 3), bias=False),
+            nn.Conv2d(in_channels + c_dim, channels, 7, 1, 3, bias=False),
             nn.InstanceNorm2d(channels, affine=True, track_running_stats=True),
             nn.ReLU(True),
         )
 
         self.down_sampling = nn.Sequential(
-            nn.Conv2d(channels, int(2 * channels), (4, 4), (2, 2), (1, 1), bias=False),
+            nn.Conv2d(channels, int(2 * channels), 4, 2, 1, bias=False),
             nn.InstanceNorm2d(int(2 * channels), affine=True, track_running_stats=True),
             nn.ReLU(True),
-            nn.Conv2d(int(2 * channels), int(4 * channels), (4, 4), (2, 2), (1, 1), bias=False),
+            nn.Conv2d(int(2 * channels), int(4 * channels), 4, 2, 1, bias=False),
             nn.InstanceNorm2d(int(4 * channels), affine=True, track_running_stats=True),
             nn.ReLU(True),
         )
@@ -93,23 +87,23 @@ class Generator(nn.Module):
         self.trunk = nn.Sequential(*trunk)
 
         self.up_sampling = nn.Sequential(
-            nn.ConvTranspose2d(int(4 * channels), int(2 * channels), (4, 4), (2, 2), (1, 1), bias=False),
+            nn.ConvTranspose2d(int(4 * channels), int(2 * channels), 4, 2, 1, bias=False),
             nn.InstanceNorm2d(int(2 * channels), affine=True, track_running_stats=True),
             nn.ReLU(True),
-            nn.ConvTranspose2d(int(2 * channels), channels, (4, 4), (2, 2), (1, 1), bias=False),
+            nn.ConvTranspose2d(int(2 * channels), channels, 4, 2, 1, bias=False),
             nn.InstanceNorm2d(channels, affine=True, track_running_stats=True),
             nn.ReLU(True),
         )
 
         self.last_layer = nn.Sequential(
-            nn.Conv2d(channels, out_channels, (7, 7), (1, 1), (3, 3), bias=False),
+            nn.Conv2d(channels, out_channels, 7, 1, 3, bias=False),
             nn.Tanh(),
         )
 
-    def forward(self, x: Tensor, label: Tensor) -> Tensor:
-        label = label.view(label.size(0), label.size(1), 1, 1)
-        label = label.repeat(1, 1, x.size(2), x.size(3))
-        x = torch.cat([x, label], dim=1)
+    def forward(self, x: Tensor, c: Tensor) -> Tensor:
+        c = c.view(c.size(0), c.size(1), 1, 1)
+        c = c.repeat(1, 1, x.size(2), x.size(3))
+        x = torch.cat([x, c], dim=1)
 
         x = self.first_layer(x)
         x = self.down_sampling(x)
@@ -127,8 +121,8 @@ class PathDiscriminator(nn.Module):
             in_channels: int = 3,
             out_channels: int = 1,
             channels: int = 64,
-            label_channels: int = 5,
             num_blocks: int = 6,
+            c_dim: int = 5,
     ) -> None:
         """Discriminator of the PatchGAN
 
@@ -137,34 +131,34 @@ class PathDiscriminator(nn.Module):
             in_channels (int, optional): The number of channels in the input image. Defaults: 3.
             out_channels (int, optional): The number of channels in the output image. Defaults: 1.
             channels (int, optional): The number of channels in all conv blocks. Defaults: 64.
-            label_channels (int, optional): The number of channels in the label image. Defaults: 5.
             num_blocks (int, optional): The number of conv blocks in the discriminator. Defaults: 6.
+            c_dim (int, optional): The number of channels in the label image. Defaults: 5.
 
         """
         super(PathDiscriminator, self).__init__()
         main = [
-            nn.Conv2d(in_channels, channels, (4, 4), (2, 2), (1, 1)),
+            nn.Conv2d(in_channels, channels, 4, 2, 1),
             nn.LeakyReLU(0.01, True),
         ]
 
         curr_channels = channels
         for _ in range(1, num_blocks):
-            main.append(nn.Conv2d(curr_channels, curr_channels * 2, (4, 4), (2, 2), (1, 1)))
+            main.append(nn.Conv2d(curr_channels, curr_channels * 2, 4, 2, 1))
             main.append(nn.LeakyReLU(0.01))
             curr_channels = curr_channels * 2
         self.main = nn.Sequential(*main)
 
         kernel_size = int(image_size / np.power(2, num_blocks))
-        self.conv1 = nn.Conv2d(curr_channels, out_channels, (3, 3), (1, 1), (1, 1), bias=False)
-        self.conv2 = nn.Conv2d(curr_channels, label_channels, (kernel_size, kernel_size), (1, 1), (0, 0), bias=False)
+        self.conv1 = nn.Conv2d(curr_channels, out_channels, 3, 1, 1, bias=False)
+        self.conv2 = nn.Conv2d(curr_channels, c_dim, (kernel_size, kernel_size), 1, (0, 0), bias=False)
 
     def forward(self, x: Tensor) -> tuple[Any, Any]:
         x = self.main(x)
         x_out = self.conv1(x)
-        x_class = self.conv2(x)
-        x_class = x_class.view(x_class.size(0), x_class.size(1))
+        x_cls = self.conv2(x)
+        x_cls = x_cls.view(x_cls.size(0), x_cls.size(1))
 
-        return x_out, x_class
+        return x_out, x_cls
 
 
 class GradientPenaltyLoss(nn.Module):
