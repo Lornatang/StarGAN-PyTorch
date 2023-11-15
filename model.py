@@ -49,20 +49,20 @@ class _ResidualConvBlock(nn.Module):
 class Generator(nn.Module):
     def __init__(
             self,
+            c_dim: int = 5,
             in_channels: int = 3,
             out_channels: int = 3,
             channels: int = 64,
             num_rcb: int = 6,
-            c_dim: int = 5,
     ) -> None:
         """Generator of the Pix2Pix
 
         Args:
+            c_dim (int, optional): The number of channels in the label image. Defaults: 5.
             in_channels (int, optional): The number of channels in the input image. Defaults: 3.
             out_channels (int, optional): The number of channels in the output image. Defaults: 3.
             channels (int, optional): The number of channels in all conv blocks. Defaults: 64.
             num_rcb (int, optional): The number of residual conv blocks in the generator. Defaults: 6.
-            c_dim (int, optional): The number of channels in the label image. Defaults: 5.
 
         """
         super(Generator, self).__init__()
@@ -118,21 +118,21 @@ class PathDiscriminator(nn.Module):
     def __init__(
             self,
             image_size: int = 128,
+            c_dim: int = 5,
             in_channels: int = 3,
             out_channels: int = 1,
             channels: int = 64,
             num_blocks: int = 6,
-            c_dim: int = 5,
     ) -> None:
         """Discriminator of the PatchGAN
 
         Args:
             image_size (int, optional): The size of the input image. Defaults: 128.
+            c_dim (int, optional): The number of channels in the label image. Defaults: 5.
             in_channels (int, optional): The number of channels in the input image. Defaults: 3.
             out_channels (int, optional): The number of channels in the output image. Defaults: 1.
             channels (int, optional): The number of channels in all conv blocks. Defaults: 64.
             num_blocks (int, optional): The number of conv blocks in the discriminator. Defaults: 6.
-            c_dim (int, optional): The number of channels in the label image. Defaults: 5.
 
         """
         super(PathDiscriminator, self).__init__()
