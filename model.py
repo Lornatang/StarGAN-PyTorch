@@ -188,9 +188,9 @@ class GradientPenaltyLoss(nn.Module):
         return gp_loss
 
 
-def generator(**kwargs) -> Generator:
-    return Generator(**kwargs)
+def generator(c_dim: int = 5, **kwargs) -> Generator:
+    return Generator(c_dim=c_dim, **kwargs)
 
 
-def path_discriminator(**kwargs) -> PathDiscriminator:
-    return PathDiscriminator(**kwargs)
+def path_discriminator(image_size: int = 128, c_dim: int = 5, **kwargs) -> PathDiscriminator:
+    return PathDiscriminator(image_size=image_size, c_dim=c_dim, **kwargs)

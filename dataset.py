@@ -25,26 +25,18 @@ class CelebADataset(Dataset):
     def __init__(
             self,
             images_dir: str,
-            crop_image_size: int,
-            resized_image_size: int,
+            transforms: transforms.Compose,
             attr_path: str,
             selected_attrs: str,
     ) -> None:
         self.images_dir = images_dir
+        self.transforms = transforms
         self.attr_path = attr_path
         self.selected_attrs = selected_attrs
 
         self.image_dataset = []
         self.attr2idx = {}
         self.idx2attr = {}
-
-        self.transform = transforms.Compose([
-            transforms.RandomHorizontalFlip(0.5),
-            transforms.CenterCrop(crop_image_size),
-            transforms.Resize(resized_image_size),
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
 
         # Preprocess attribute file
         lines = [line.rstrip() for line in open(self.attr_path, "r")]
@@ -72,7 +64,7 @@ class CelebADataset(Dataset):
 
         image = Image.open(os.path.join(self.images_dir, filename))
 
-        image_tensor = self.transform(image)
+        image_tensor = self.transforms(image)
         label_tensor = torch.FloatTensor(label)
 
         return {"image": image_tensor, "label": label_tensor}
