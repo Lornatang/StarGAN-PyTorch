@@ -44,7 +44,7 @@ $ python3 inference.py
 ### Train StarGAN-CelebA-128x128
 
 ```bash
-python3 train.py --config_path ./configs/train/CelebA_128x128.yaml
+python3 trainer.py --config_path ./configs/train/CelebA_128x128.yaml
 ```
 
 ### Resume train StarGAN-CelebA-128x128
@@ -55,7 +55,7 @@ Modify the `./configs/train/CelebA_128x128.yaml` file.
 - line 45: `RESUMED_D_MODEL` change to `samples/StarGAN-CelebA-128x128/d_epoch_XXX.pth.tar`.
 
 ```bash
-python3 train.py --config_path ./configs/train/CelebA_128x128.yaml
+python3 trainer.py --config_path ./configs/train/CelebA_128x128.yaml
 ```
 
 ## Result

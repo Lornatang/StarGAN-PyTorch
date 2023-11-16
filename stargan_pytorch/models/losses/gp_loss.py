@@ -14,6 +14,10 @@
 import torch
 from torch import nn, Tensor
 
+__all__ = [
+    "GradientPenaltyLoss",
+]
+
 
 class GradientPenaltyLoss(nn.Module):
     def __init__(self):

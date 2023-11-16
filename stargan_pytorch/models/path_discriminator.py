@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import numpy as np
 from torch import nn, Tensor
 
 __all__ = [
@@ -21,7 +22,7 @@ __all__ = [
 class PathDiscriminator(nn.Module):
     def __init__(
             self,
-            image_size: int = 128,
+            img_size: int = 128,
             c_dim: int = 5,
             in_channels: int = 3,
             out_channels: int = 1,
@@ -31,7 +32,7 @@ class PathDiscriminator(nn.Module):
         """Discriminator of the PatchGAN
 
         Args:
-            image_size (int, optional): The size of the input image. Defaults: 128.
+            img_size (int, optional): The size of the input image. Defaults: 128.
             c_dim (int, optional): The number of channels in the label image. Defaults: 5.
             in_channels (int, optional): The number of channels in the input image. Defaults: 3.
             out_channels (int, optional): The number of channels in the output image. Defaults: 1.
@@ -52,7 +53,7 @@ class PathDiscriminator(nn.Module):
             curr_channels = curr_channels * 2
         self.main = nn.Sequential(*main)
 
-        kernel_size = int(image_size / np.power(2, num_blocks))
+        kernel_size = int(img_size / np.power(2, num_blocks))
         self.conv1 = nn.Conv2d(curr_channels, out_channels, 3, 1, 1, bias=False)
         self.conv2 = nn.Conv2d(curr_channels, c_dim, (kernel_size, kernel_size), 1, (0, 0), bias=False)
 
@@ -65,5 +66,5 @@ class PathDiscriminator(nn.Module):
         return x_out, x_cls
 
 
-def path_discriminator(image_size: int = 128, c_dim: int = 5, **kwargs) -> PathDiscriminator:
-    return PathDiscriminator(image_size=image_size, c_dim=c_dim, **kwargs)
+def path_discriminator(img_size: int = 128, c_dim: int = 5, **kwargs) -> PathDiscriminator:
+    return PathDiscriminator(img_size=img_size, c_dim=c_dim, **kwargs)

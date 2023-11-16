@@ -26,17 +26,17 @@ __all__ = [
 class CelebADataset(Dataset):
     def __init__(
             self,
-            images_dir: str,
+            root: str,
             transforms: transforms.Compose,
             attr_path: str,
             selected_attrs: str,
     ) -> None:
-        self.images_dir = images_dir
+        self.root = root
         self.transforms = transforms
         self.attr_path = attr_path
         self.selected_attrs = selected_attrs
 
-        self.image_dataset = []
+        self.img_dataset = []
         self.attr2idx = {}
         self.idx2attr = {}
 
@@ -58,19 +58,19 @@ class CelebADataset(Dataset):
                 idx = self.attr2idx[attr_name]
                 label.append(values[idx] == "1")
 
-            self.image_dataset.append([filename, label])
+            self.img_dataset.append([filename, label])
 
     def __getitem__(self, batch_index: int) -> (torch.Tensor, torch.Tensor):
         """Return one image and its corresponding attribute label."""
-        filename, label = self.image_dataset[batch_index]
+        file_name, label = self.img_dataset[batch_index]
 
-        image = Image.open(os.path.join(self.images_dir, filename))
+        img = Image.open(os.path.join(self.root, file_name))
 
-        image_tensor = self.transforms(image)
-        label_tensor = torch.FloatTensor(label)
+        img = self.transforms(img)
+        label = torch.FloatTensor(label)
 
-        return {"image": image_tensor, "label": label_tensor}
+        return {"img": img, "label": label}
 
     def __len__(self):
         """Return the number of images."""
-        return len(self.image_dataset)
+        return len(self.img_dataset)

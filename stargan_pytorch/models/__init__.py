@@ -14,9 +14,11 @@
 from .losses import *
 from .path_discriminator import *
 from .stargan import *
+from .utils import *
 
 __all__ = [
     "GradientPenaltyLoss",
     "StarGAN", "PathDiscriminator",
     "generator", "path_discriminator",
+    "load_state_dict", "load_resume_state_dict", "profile",
 ]

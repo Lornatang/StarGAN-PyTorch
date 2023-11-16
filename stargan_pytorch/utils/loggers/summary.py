@@ -11,10 +11,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-from .common import *
-from .loggers import *
+"""
+Print the mean, total value, or average according to different attributes
+"""
+from enum import Enum
 
 __all__ = [
-    "create_labels", "denorm", "label2onehot",
-    "AverageMeter", "ProgressMeter", "Summary",
+    "Summary",
 ]
+
+class Summary(Enum):
+    NONE = 0
+    AVERAGE = 1
+    SUM = 2
+    COUNT = 3

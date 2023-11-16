@@ -4,3 +4,4 @@ PyYAML>=5.4.1
 Pillow>=9.0.1
 torchvision>=0.15.2+cu118
 opencv-python>=4.8.0.76
+thop>=0.0.31.post2005241907
