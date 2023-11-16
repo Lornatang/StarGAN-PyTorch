@@ -1,7 +1,7 @@
 # experiment name
 EXP_NAME: StarGAN-CelebA-128x128
 # random number seed
-SEED: 0
+SEED: 42
 # run device model
 DEVICE_ID: 0
 
@@ -11,7 +11,6 @@ MODEL:
     C_DIM: 5
     COMPILED: True
   D:
-    NAME: path_discriminator
     IMG_SIZE: 128
     C_DIM: 5
     COMPILED: False
@@ -72,3 +71,4 @@ TRAIN:
 
   PRINT_FREQ: 100
   VISUAL_FREQ: 1000
+  SAVE_EVERY_EPOCH: False
