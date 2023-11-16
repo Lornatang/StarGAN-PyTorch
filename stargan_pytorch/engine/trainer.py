@@ -277,36 +277,41 @@ class Trainer:
         resume_g_model_weights_path = self.config["TRAIN"]["CHECKPOINT"]["G"]["RESUME_MODEL_WEIGHTS_PATH"]
         resume_d_model_weights_path = self.config["TRAIN"]["CHECKPOINT"]["D"]["RESUME_MODEL_WEIGHTS_PATH"]
 
+        g_compile_model = self.config["MODEL"]["G"]["COMPILED"]
+        d_compile_model = self.config["MODEL"]["D"]["COMPILED"]
+
         # Load pretrained model weights
         if pretrained_g_model_weights_path != "" and os.path.exists(pretrained_g_model_weights_path):
             print(f"Load checkpoint from '{pretrained_g_model_weights_path}'")
             state_dict = torch.load(pretrained_g_model_weights_path, map_location=self.device)["state_dict"]
-            self.g_model = load_state_dict(self.g_model, state_dict)
+            self.g_model = load_state_dict(self.g_model, state_dict, g_compile_model)
         if pretrained_d_model_weights_path != "" and os.path.exists(pretrained_d_model_weights_path):
             print(f"Load checkpoint from '{pretrained_d_model_weights_path}'")
             state_dict = torch.load(pretrained_d_model_weights_path, map_location=self.device)["state_dict"]
-            self.d_model = load_state_dict(self.d_model, state_dict)
+            self.d_model = load_state_dict(self.d_model, state_dict, d_compile_model)
 
         # Load resume model weights
         if resume_g_model_weights_path != "":
             print(f"Load resume checkpoint from '{resume_g_model_weights_path}'")
             self.start_epoch, self.g_model, self.ema_g_model, self.g_optim, self.d_scheduler = load_resume_state_dict(self.g_model,
                                                                                                                       self.ema_g_model,
-                                                                                                                      resume_g_model_weights_path)
+                                                                                                                      resume_g_model_weights_path,
+                                                                                                                      g_compile_model)
         if resume_d_model_weights_path != "":
             print(f"Load resume checkpoint from '{resume_d_model_weights_path}'")
             self.start_epoch, self.d_model, _, self.d_optim, self.d_scheduler = load_resume_state_dict(self.d_model,
                                                                                                        None,
-                                                                                                       resume_d_model_weights_path)
+                                                                                                       resume_d_model_weights_path,
+                                                                                                       d_compile_model)
 
     def visual_on_iters(self, iters: int):
         with torch.no_grad():
-            img_fake_list = [self.imgs_fixed]
+            imgs_fake_list = [self.imgs_fixed]
             for label_fixed in self.label_fixed_list:
-                img_fake_list.append(self.g_model(self.imgs_fixed, label_fixed))
-            img_concat = torch.cat(img_fake_list, dim=3)
+                imgs_fake_list.append(self.g_model(self.imgs_fixed, label_fixed))
+            imgs_concat = torch.cat(imgs_fake_list, dim=3)
             save_sample_path = os.path.join(self.save_visuals_dir, f"iter-{iters:06d}.jpg")
-            save_image(denorm(img_concat.data.cpu()), save_sample_path, nrow=1, padding=0)
+            save_image(denorm(imgs_concat.data.cpu()), save_sample_path, nrow=1, padding=0)
 
     def save_checkpoint(self, epoch: int) -> None:
         # Automatically save models weights

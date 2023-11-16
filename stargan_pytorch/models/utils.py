@@ -28,26 +28,26 @@ __all__ = [
 def load_state_dict(
         model: nn.Module,
         state_dict: dict,
+        compile_mode: bool = False,
 ) -> nn.Module:
     """Load the PyTorch model weights from the model weight address
 
     Args:
         model (nn.Module): PyTorch model
         state_dict: PyTorch model state dict
+        compile_mode (bool, optional): Compile mode. Default: ``False``
 
     Returns:
         model: PyTorch model with weights
     """
 
     # When the PyTorch version is less than 2.0, the model compilation is not supported.
-    if int(torch.__version__[0]) < 2 and model.compile_mode:
+    if int(torch.__version__[0]) < 2 and compile_mode:
         warnings.warn("PyTorch version is less than 2.0, does not support model compilation.")
-        model.compile_mode = False
+        compile_mode = False
 
     # compile keyword
-    compile_keyword = ""
-    if model.compile_mode:
-        compile_keyword = "_orig_mod"
+    compile_keyword = "_orig_mod"
 
     # Create new OrderedDict that does not contain the module prefix
     model_state_dict = model.state_dict()
@@ -57,9 +57,9 @@ def load_state_dict(
     for k, v in state_dict.items():
         k_prefix = k.split(".")[0]
 
-        if k_prefix == compile_keyword and not model.compile_mode:
+        if k_prefix == compile_keyword and not compile_mode:
             name = k[len(compile_keyword) + 1:]
-        elif k_prefix != compile_keyword and model.compile_mode:
+        elif k_prefix != compile_keyword and compile_mode:
             raise ValueError("The model is not compiled, but the weight is compiled.")
         else:
             name = k
@@ -80,6 +80,7 @@ def load_resume_state_dict(
         model: nn.Module,
         ema_model: nn.Module = None,
         model_weights_path: str | Path = "",
+        compile_mode: bool = False,
 ) -> tuple[int, nn.Module, nn.Module, optim.Optimizer, optim.lr_scheduler]:
     """Load the PyTorch model weights from the model weight address
 
@@ -87,6 +88,7 @@ def load_resume_state_dict(
         model (nn.Module): PyTorch model
         model_weights_path: PyTorch model path
         ema_model (nn.Module): EMA model
+        compile_mode (bool, optional): Compile mode. Default: ``False``
 
     Returns:
         start_epoch (int): Start epoch
@@ -103,8 +105,8 @@ def load_resume_state_dict(
 
     checkpoint = torch.load(model_weights_path, map_location=lambda storage, loc: storage)
     start_epoch = checkpoint["epoch"]
-    model = load_state_dict(model, checkpoint["state_dict"])
-    ema_model = load_state_dict(ema_model, checkpoint["ema_state_dict"]) if ema_model is not None else None
+    model = load_state_dict(model, checkpoint["state_dict"], compile_mode)
+    ema_model = load_state_dict(ema_model, checkpoint["ema_state_dict"], compile_mode) if ema_model is not None else None
     optimizer = checkpoint["optimizer"]
     scheduler = checkpoint["scheduler"]
 
