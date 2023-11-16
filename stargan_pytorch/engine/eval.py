@@ -82,7 +82,7 @@ class Evaler:
         )
         # generate dataset iterator
         dataloader = DataLoader(datasets,
-                                batch_size=self.config["TRAIN"]["HYP"]["IMGS_PER_BATCH"],
+                                batch_size=self.config["TEST"]["HYP"]["IMGS_PER_BATCH"],
                                 shuffle=False,
                                 num_workers=4,
                                 pin_memory=True,

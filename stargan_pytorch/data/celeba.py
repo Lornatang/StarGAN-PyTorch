@@ -38,14 +38,12 @@ class CelebADataset(Dataset):
 
         self.img_dataset = []
         self.attr2idx = {}
-        self.idx2attr = {}
 
         # Preprocess attribute file
         lines = [line.rstrip() for line in open(self.attr_path, "r")]
         all_attr_names = lines[1].split()
         for i, attr_name in enumerate(all_attr_names):
             self.attr2idx[attr_name] = i
-            self.idx2attr[i] = attr_name
 
         lines = lines[2:]
         for i, line in enumerate(lines):

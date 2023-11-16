@@ -71,3 +71,11 @@ TRAIN:
 
   PRINT_FREQ: 100
   VISUAL_FREQ: 1000
+  SAVE_EVERY_EPOCH: False
+
+TEST:
+  # Model file address, used for pre-training and recovery training
+  CHECKPOINT:
+    MODEL_WEIGHTS_PATH: "./results/pretrained_models/StarGAN-CelebA-256x256.pth.tar"
+  HYP:
+    IMGS_PER_BATCH: 1

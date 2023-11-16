@@ -77,3 +77,6 @@ TEST:
   # Model file address, used for pre-training and recovery training
   CHECKPOINT:
     MODEL_WEIGHTS_PATH: "./results/pretrained_models/StarGAN-CelebA-128x128.pth.tar"
+
+  HYP:
+    IMGS_PER_BATCH: 1
