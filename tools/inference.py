@@ -29,8 +29,8 @@ def get_opts() -> argparse.Namespace:
     parser.add_argument(
         "--weights",
         type=str,
-        default="./results/pretrained_models/StarGAN-CelebA-128x128.pth.tar",
-        help="Model weights file path. Default: `./results/pretrained_models/StarGAN-CelebA-128x128.pth.tar`",
+        default="./results/pretrained_models/g_celeba128.pth.tar",
+        help="Model weights file path. Default: `./results/pretrained_models/g_celeba128.pth.tar`",
     )
     parser.add_argument("-i", "--inputs",
                         type=str,
@@ -74,7 +74,6 @@ def main(opts: argparse.Namespace, device: torch.device):
 
     # Read original image
     transform = transforms.Compose([
-        transforms.CenterCrop(opts.img_size + 56),  # 178 x 178
         transforms.Resize(opts.img_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
