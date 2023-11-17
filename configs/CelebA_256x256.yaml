@@ -1,5 +1,5 @@
 # experiment name
-EXP_NAME: StarGAN-CelebA-256x256
+EXP_NAME: stargan_celeba256
 # random number seed
 SEED: 42
 # run device model
@@ -76,6 +76,6 @@ TRAIN:
 TEST:
   # Model file address, used for pre-training and recovery training
   CHECKPOINT:
-    MODEL_WEIGHTS_PATH: "./results/pretrained_models/StarGAN-CelebA-256x256.pth.tar"
+    MODEL_WEIGHTS_PATH: "./results/pretrained_models/g_celeba256.pth.tar"
   HYP:
     IMGS_PER_BATCH: 1
