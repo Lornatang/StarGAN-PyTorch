@@ -73,7 +73,7 @@ python3 ./tools/train.py ./configs/CelebA128.yaml
 python3 ./tools/train.py ./configs/CelebA256.yaml
 ```
 
-The training results will be saved to `./results/train/eleba128` or `./results/train/celeba256`.
+The training results will be saved to `./results/train/celeba128` or `./results/train/celeba256`.
 
 ## Contributing
 
