@@ -1,5 +1,5 @@
 # experiment name
-EXP_NAME: stargan_celeba128
+EXP_NAME: celeba128
 # random number seed
 SEED: 42
 # run device model

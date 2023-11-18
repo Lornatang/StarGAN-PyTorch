@@ -2,8 +2,7 @@
 .vscode/
 
 build/*
-data/celeba/*
-figure/*
+data/celeba
 dist/*
 results/*
 stargan_pytorch.egg-info/*
@@ -17,7 +16,6 @@ tb_logger/*
 *.tar
 *.tar.gz
 *.zip
-*.jpg
 *.jpeg
 *.png
 *.bmp

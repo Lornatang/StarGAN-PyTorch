@@ -1,78 +1,87 @@
 # StarGAN-PyTorch
 
-### Overview
+## Contents
+
+- [Introduction](#introduction)
+- [Getting Started](#getting-started)
+  - [Requirements](#requirements)
+  - [From PyPI](#from-pypi)
+  - [Local Install](#local-install)
+- [All pretrained model weights](#all-pretrained-model-weights)
+- [Test (e.g. CelebA-128x128)](#test-eg-celeba-128x128)
+- [Train](#train)
+- [Contributing](#contributing)
+- [Credit](#credit)
+  - [StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation](#stargan-unified-generative-adversarial-networks-for-multi-domain-image-to-image-translation)
+
+## Introduction
 
 This repository contains an op-for-op PyTorch reimplementation of [StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation](https://arxiv.org/abs/1711.09020v3).
 
-## Table of contents
+## Getting Started
 
-- [StarGAN-PyTorch](#stargan-pytorch)
-    - [Overview](#overview)
-    - [Table of contents](#table-of-contents)
-    - [Download weights](#download-weights)
-    - [Download datasets](#download-datasets)
-    - [How Test and Train](#how-test-and-train)
-      - [Train StarGAN-CelebA-128x128](#train-stargan-celeba-128x128)
-      - [Resume train StarGAN-CelebA-128x128](#resume-train-stargan-celeba-128x128)
-    - [Result](#result)
-    - [Contributing](#contributing)
-    - [Credit](#credit)
-        - [StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation](#stargan-unified-generative-adversarial-networks-for-multi-domain-image-to-image-translation)
+### Requirements
 
-## Download weights
+- Python 3.10+
+- PyTorch 2.1.0+
+- CUDA 11.8+
+- Ubuntu 22.04+
 
-```shell
-$ bash ./scripts/download_weights.sh StarGAN-CelebA-128x128
+### From PyPI
+
+```bash
+pip install stargan_pytorch -i https://pypi.org/simple
 ```
 
-## Download datasets
+### Local Install
+
+```bash
+git clone https://github.com/Lornatang/StarGAN-PyTorch.git
+cd StarGAN-PyTorch
+pip install -r requirements.txt
+pip install -e .
+```
+
+## All pretrained model weights
+
+- [g_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba128.pth.tar?download=true)
+- [g_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba256.pth.tar?download=true)
+- [d_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba128.pth.tar?download=true)
+- [d_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba256.pth.tar?download=true)
+
+## Test (e.g. CelebA-128x128)
 
 ```shell
-$ bash ./scripts/download_dataset.sh CelebA
+# Download g_celeba128 model weights to `./results/pretrained_models`
+wget https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba128.pth.tar?download=true -O ./results/pretrained_models/g_celeba128.pth.tar
+python ./tools/test.py ./configs/CelebA128.yaml
+# Result will be saved to `./results/test/celeba128`
 ```
+
+<div align="center">
+<img src="figure/celeba_128.jpg" width="768">
+</div>
+
+## Train
 
 Please refer to `README.md` in the `data` directory for the method of making a dataset.
 
-## How Test and Train
-
-### Test one image
-
-```bash
-$ python3 inference.py
+```shell
+# If you want to train StarGAN-CelebA-128x128, run this command
+python3 ./tools/train.py ./configs/CelebA128.yaml
+# If you want to train StarGAN-CelebA-256x256, run this command
+python3 ./tools/train.py ./configs/CelebA256.yaml
 ```
 
-### Train StarGAN-CelebA-128x128
+The training results will be saved to `./results/train/eleba128` or `./results/train/celeba256`.
 
-```bash
-python3 trainer.py --config_path ./configs/train/CelebA_128x128.yaml
-```
-
-### Resume train StarGAN-CelebA-128x128
-
-Modify the `./configs/train/CelebA_128x128.yaml` file.
-
-- line 44: `RESUMED_G_MODEL` change to `samples/StarGAN-CelebA-128x128/g_epoch_XXX.pth.tar`.
-- line 45: `RESUMED_D_MODEL` change to `samples/StarGAN-CelebA-128x128/d_epoch_XXX.pth.tar`.
-
-```bash
-python3 trainer.py --config_path ./configs/train/CelebA_128x128.yaml
-```
-
-## Result
-
-<img src="figure/results_celeba_example1.jpg"/>
-<img src="figure/results_celeba_example2.jpg"/>
-<img src="figure/results_celeba_example3.jpg"/>
-<img src="figure/results_celeba_example4.jpg"/>
-<img src="figure/results_celeba_example5.jpg"/>
-
-### Contributing
+## Contributing
 
 If you find a bug, create a GitHub issue, or even better, submit a pull request. Similarly, if you have questions, simply post them as GitHub issues.
 
 I look forward to seeing what the community does with these models!
 
-### Credit
+## Credit
 
 #### StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation
 
