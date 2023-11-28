@@ -5,8 +5,7 @@
 - [Introduction](#introduction)
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
-  - [From PyPI](#from-pypi)
-  - [Local Install](#local-install)
+  - [Install](#install)
 - [All pretrained model weights](#all-pretrained-model-weights)
 - [Test (e.g. CelebA-128x128)](#test-eg-celeba-128x128)
 - [Train](#train)
@@ -27,40 +26,36 @@ This repository contains an op-for-op PyTorch reimplementation of [StarGAN: Unif
 - CUDA 11.8+
 - Ubuntu 22.04+
 
-### From PyPI
-
-```bash
-pip install stargan_pytorch -i https://pypi.org/simple
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
-### Local Install
+### Install
 
 ```bash
 git clone https://github.com/Lornatang/StarGAN-PyTorch.git
 cd StarGAN-PyTorch
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
+# From pypi (recommended)
+pip install stargan_pytorch
+# From local
 pip install -e .
 ```
 
 ## All pretrained model weights
 
-- [g_celeba-128x128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-128x128.pth.tar?download=true)
-- [g_celeba-256x256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-256x256.pth.tar?download=true)
-- [d_celeba-128x128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-128x128.pth.tar?download=true)
-- [d_celeba-256x256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-256x256.pth.tar?download=true)
+- [g_128x128-celeba](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_128x128-celeba.pth.tar?download=true)
+- [g_256x256-celeba](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_256x256-celeba.pth.tar?download=true)
+- [d_128x128-celeba](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_128x128-celeba.pth.tar?download=true)
+- [d_256x256-celeba](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_256x256-celeba.pth.tar?download=true)
 
 ## Test (e.g. CelebA-128x128)
 
 ```shell
-# Download g_celeba-128x128 model weights to `./results/pretrained_models`
-wget https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-128x128.pth.tar?download=true -O ./results/pretrained_models/g_celeba-128x128.pth.tar
-python ./tools/test.py ./configs/celeba_128x128.yaml
-# Result will be saved to `./results/test/celeba128`
+# Download g_128x128-celeba model weights to `./results/pretrained_models`
+wget https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_128x128-celeba.pth.tar?download=true -O ./results/pretrained_models/g_128x128-celeba.pth.tar
+python ./tools/eval.py ./configs/celeba_128x128.yaml
+# Result will be saved to `./results/test/celeba_128x128`
 ```
 
-original -> Black_Hair -> Blond_Hair -> Brown_Hair -> Male -> Young
+original - Black_Hair - Blond_Hair - Brown_Hair - Male - Young
 
 <div align="center">
 <img src="figure/celeba_128.jpg" width="768">
@@ -71,10 +66,10 @@ original -> Black_Hair -> Blond_Hair -> Brown_Hair -> Male -> Young
 Please refer to `README.md` in the `data` directory for the method of making a dataset.
 
 ```shell
-# If you want to train StarGAN-CelebA-128x128, run this command
-python3 ./tools/train.py ./configs/celeba_128x128.yaml
-# If you want to train StarGAN-CelebA-256x256, run this command
-python3 ./tools/train.py ./configs/celeba_256x256.yaml
+# If you want to train g_128x128-celeba, run this command
+python ./tools/train.py ./configs/celeba_128x128.yaml
+# If you want to train g_256x256-celeba, run this command
+python ./tools/train.py ./configs/celeba_256x256.yaml
 ```
 
 The training results will be saved to `./results/train/celeba_128x128` or `./results/train/celeba_256x256`.

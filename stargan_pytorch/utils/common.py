@@ -11,12 +11,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+import random
+
 import numpy as np
 import torch
 from torch import Tensor
 
 __all__ = [
-    "create_labels", "denorm", "label2onehot",
+    "create_labels", "denorm", "label2onehot", "init_seed", "select_device",
 ]
 
 
@@ -86,3 +88,33 @@ def label2onehot(labels: Tensor, dim: int) -> Tensor:
     out = torch.zeros(batch_size, dim)
     out[np.arange(batch_size), labels.long()] = 1
     return out
+
+
+def init_seed(seed: int = 0) -> None:
+    """Initialize random seed.
+
+    Args:
+        seed (int, optional): Random seed. Default: 0.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+
+
+def select_device(device: str = "") -> torch.device:
+    """Select device to train model.
+
+    Args:
+        device (str, optional): Device name. Default: "".
+
+    Returns:
+        torch.device: Device to train model.
+    """
+
+    if device.lower() in ["cuda", "gpu"] and torch.cuda.is_available():
+        print("Using GPU.")
+        return torch.device("cuda")
+    else:
+        print("Using CPU.")
+        return torch.device("cpu")

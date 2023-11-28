@@ -108,10 +108,8 @@ class Evaler:
 
         while batch_data is not None:
             # Load batches of data
-            imgs, labels = batch_data[0], batch_data[1]
-            if self.device.type == "cuda":
-                imgs = imgs.to(self.device, non_blocking=True)
-                labels = labels.to(self.device, non_blocking=True)
+            imgs = batch_data[0].to(self.device, non_blocking=True)
+            labels = batch_data[1].to(self.device, non_blocking=True)
 
             # Prepare input images and target domain labels.
             labels_list = create_labels(labels,

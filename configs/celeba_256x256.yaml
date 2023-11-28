@@ -1,11 +1,8 @@
-# experiment name
+PROJECT_NAME: StarGAN
 EXP_NAME: celeba_256x256
-# random number seed
 SEED: 42
-# run device model
-DEVICE_ID: 0
+DEVICE: "cuda"
 
-# Model define
 MODEL:
   G:
     C_DIM: 5
@@ -35,7 +32,7 @@ TRAIN:
   HYP:
     IMGS_PER_BATCH: 16
 
-    EPOCHS: 16
+    EPOCHS: 16  # 202599 / 16 ~= 12663 iters for one epoch, 12663 * 16 = 202608 ~= 200000 iters
 
   OPTIM:
     G:

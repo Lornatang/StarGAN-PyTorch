@@ -1,11 +1,8 @@
-# experiment name
+PROJECT_NAME: StarGAN
 EXP_NAME: celeba_128x128
-# random number seed
 SEED: 42
-# run device model
-DEVICE_ID: 0
+DEVICE: "cuda"
 
-# Model define
 MODEL:
   G:
     C_DIM: 5
@@ -84,7 +81,7 @@ VAL:
 
   CHECKPOINT:
     G:
-      WEIGHTS: "./results/pretrained_models/g_celeba-128x128.pth.tar"
+      WEIGHTS: "./results/pretrained_models/g_128x128-celeba.pth.tar"
 
   HYP:
     IMGS_PER_BATCH: 1

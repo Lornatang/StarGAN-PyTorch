@@ -17,7 +17,9 @@ from pathlib import Path
 from typing import Dict, Union
 
 import torch
+import wandb
 from torch import nn, optim, Tensor
+from torch.cuda import amp
 from torch.optim.swa_utils import AveragedModel
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
@@ -33,12 +35,14 @@ class Trainer:
     def __init__(
             self,
             config: Dict,
+            scaler: amp.GradScaler,
             device: torch.device,
             save_weights_dir: Union[str, Path],
             save_visuals_dir: Union[str, Path],
             tblogger: SummaryWriter,
     ) -> None:
         self.config = config
+        self.scaler = scaler
         self.device = device
         self.save_weights_dir = save_weights_dir
         self.save_visuals_dir = save_visuals_dir
@@ -57,10 +61,8 @@ class Trainer:
 
         # For training visualization, select a fixed batch of data
         self.fixed_data = self.dataloader.next()
-        self.imgs_fixed = self.fixed_data["img"]
-        self.label_fixed = self.fixed_data["label"]
-        self.imgs_fixed = self.imgs_fixed.to(self.device)
-        self.label_fixed = self.label_fixed.to(self.device)
+        self.imgs_fixed = self.fixed_data[0].to(self.device, non_blocking=True)
+        self.label_fixed = self.fixed_data[1].to(self.device, non_blocking=True)
         self.label_fixed_list = create_labels(self.label_fixed,
                                               self.config["MODEL"]["G"]["C_DIM"],
                                               "CelebA",  # Only support CelebA dataset
@@ -142,7 +144,7 @@ class Trainer:
             torch.optim.lr_scheduler: generator scheduler, discriminator scheduler
         """
         g_lr_scheduler_name = self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["G"]["NAME"]
-        if g_lr_scheduler_name == "step":
+        if g_lr_scheduler_name == "step_lr":
             g_lr_scheduler = optim.lr_scheduler.StepLR(
                 self.g_optim,
                 self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["G"]["STEP_SIZE"],
@@ -152,7 +154,7 @@ class Trainer:
             raise NotImplementedError(f"Unsupported generator scheduler: {g_lr_scheduler_name}")
 
         d_lr_scheduler_name = self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["D"]["NAME"]
-        if d_lr_scheduler_name == "step":
+        if d_lr_scheduler_name == "step_lr":
             d_lr_scheduler = optim.lr_scheduler.StepLR(
                 self.d_optim,
                 self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["D"]["STEP_SIZE"],
@@ -195,7 +197,7 @@ class Trainer:
                                 drop_last=True,
                                 persistent_workers=True)
 
-        if self.device == "cuda":
+        if self.device.type == "cuda":
             # Replace the data set iterator with CUDA to speed up
             dataloader = CUDAPrefetcher(dataloader, self.device)
         else:
@@ -203,7 +205,7 @@ class Trainer:
 
         return dataloader
 
-    def update_g(self, imgs: Tensor, src_label: Tensor, trg_label: Tensor):
+    def update_g(self, imgs: Tensor, src_labels: Tensor, trg_labels: Tensor):
         # Disable discriminator backpropagation during generator training
         for d_parameters in self.d_model.parameters():
             d_parameters.requires_grad = False
@@ -212,14 +214,14 @@ class Trainer:
         self.g_model.zero_grad(set_to_none=True)
 
         # Calculate the perceptual loss of the generator, mainly including pixel loss, feature loss and confrontation loss
-        fake_imgs = self.g_model(imgs, trg_label)
+        fake_imgs = self.g_model(imgs, trg_labels)
         fake_output, fake_class = self.d_model(fake_imgs)
         g_loss_fake = - torch.mean(fake_output)
-        g_loss_class = self.class_criterion(fake_class, trg_label)
+        g_loss_class = self.class_criterion(fake_class, trg_labels)
         g_loss_class = torch.sum(torch.mul(self.class_loss_weight, g_loss_class))
 
         # Target-to-original domain.
-        rec_imgs = self.g_model(fake_imgs, src_label)
+        rec_imgs = self.g_model(fake_imgs, src_labels)
         g_loss_rec = self.rec_criterion(rec_imgs, imgs)
         g_loss_rec = torch.sum(torch.mul(self.rec_loss_weight, g_loss_rec))
 
@@ -236,7 +238,7 @@ class Trainer:
 
         return g_loss, g_loss_fake, g_loss_class, g_loss_rec
 
-    def update_d(self, imgs: Tensor, src_label: Tensor, trg_label: Tensor):
+    def update_d(self, imgs: Tensor, src_labels: Tensor, trg_labels: Tensor):
         # Start training the discriminator model
         # During discriminator model training, enable discriminator model backpropagation
         for d_parameters in self.d_model.parameters():
@@ -248,11 +250,11 @@ class Trainer:
         # Calculate the classification score of the discriminator model on real samples
         real_output, real_class = self.d_model(imgs)
         d_loss_real = - torch.mean(real_output)
-        d_loss_class = self.class_criterion(real_class, src_label)
+        d_loss_class = self.class_criterion(real_class, src_labels)
         d_loss_class = torch.sum(torch.mul(self.class_loss_weight, d_loss_class))
 
         # Calculate the classification score of the generated samples by the discriminator model
-        fake_imgs = self.g_model(imgs, trg_label)
+        fake_imgs = self.g_model(imgs, trg_labels)
         fake_output, _ = self.d_model(fake_imgs.detach())
         d_loss_fake = torch.mean(fake_output)
 
@@ -278,8 +280,8 @@ class Trainer:
         global g_loss, g_loss_fake, g_loss_class, g_loss_rec
         batch_time = AverageMeter("Time", ":6.3f")
         data_time = AverageMeter("Data", ":6.3f")
-        g_losses = AverageMeter("G Loss", ":6.6f")
-        d_losses = AverageMeter("D Loss", ":6.6f")
+        g_losses = AverageMeter("G Loss", ":.4e")
+        d_losses = AverageMeter("D Loss", ":.4e")
         progress = ProgressMeter(self.batches,
                                  [batch_time, data_time, g_losses, d_losses],
                                  prefix=f"Epoch: [{epoch}]")
@@ -297,24 +299,22 @@ class Trainer:
         while batch_data is not None:
             total_batch_idx = batch_idx + (self.batches * epoch)
             # Load batches of data
-            imgs, src_label = batch_data[0], batch_data[1]
-            if self.device.type == "cuda":
-                imgs = imgs.to(self.device, non_blocking=True)
-                src_label = src_label.to(self.device, non_blocking=True)
+            imgs = batch_data[0].to(self.device, non_blocking=True)
+            src_labels = batch_data[1].to(self.device, non_blocking=True)
 
             # Generate target domain labels randomly.
-            rand_index = torch.randperm(src_label.size(0))
-            trg_label = src_label[rand_index]
+            rand_index = torch.randperm(src_labels.size(0))
+            trg_labels = src_labels[rand_index]
 
             # Record the time to load a batch of data
             data_time.update(time.time() - end)
 
             # start training the discriminator model
-            d_loss, d_loss_real, d_loss_fake, d_loss_class, d_loss_gp = self.update_d(imgs, src_label, trg_label)
+            d_loss, d_loss_real, d_loss_fake, d_loss_class, d_loss_gp = self.update_d(imgs, src_labels, trg_labels)
 
             # start training the generator model
             if (batch_idx + 1) % self.config["TRAIN"]["N_CRITIC"] == 0 or batch_idx == 0 or (batch_idx + 1) == self.batches:
-                g_loss, g_loss_fake, g_loss_class, g_loss_rec = self.update_g(imgs, src_label, trg_label)
+                g_loss, g_loss_fake, g_loss_class, g_loss_rec = self.update_g(imgs, src_labels, trg_labels)
 
             # record the loss value
             d_losses.update(d_loss.item(), imgs.size(0))
@@ -324,9 +324,22 @@ class Trainer:
             batch_time.update(time.time() - end)
             end = time.time()
 
-            # Output training log information once
+            # Writer the training log
+            # wandb
+            wandb.log({
+                "Train/D_Loss": d_loss.item(),
+                "Train/D(GT)_Loss": d_loss_real.item(),
+                "Train/D(G(z))_Loss": d_loss_fake.item(),
+                "Train/D_Class_Loss": d_loss_class.item(),
+                "Train/D_GP_Loss": d_loss_gp.item(),
+                "Train/G_Loss": g_loss.item(),
+                "Train/G(G(z))_Loss": g_loss_fake.item(),
+                "Train/G_Class_Loss": g_loss_class.item(),
+                "Train/G_REC_Loss": g_loss_rec.item(),
+            })
+
             if batch_idx % self.config["TRAIN"]["PRINT_FREQ"] == 0:
-                # write training log
+                # tensorboard
                 self.tblogger.add_scalar("Train/D_Loss", d_loss.item(), total_batch_idx)
                 self.tblogger.add_scalar("Train/D(GT)_Loss", d_loss_real.item(), total_batch_idx)
                 self.tblogger.add_scalar("Train/D(G(z))_Loss", d_loss_fake.item(), total_batch_idx)
@@ -336,6 +349,7 @@ class Trainer:
                 self.tblogger.add_scalar("Train/G(G(z))_Loss", g_loss_fake.item(), total_batch_idx)
                 self.tblogger.add_scalar("Train/G_Class_Loss", g_loss_class.item(), total_batch_idx)
                 self.tblogger.add_scalar("Train/G_REC_Loss", g_loss_rec.item(), total_batch_idx)
+
                 progress.display(batch_idx + 1)
 
             # Save the generated samples
@@ -360,6 +374,9 @@ class Trainer:
 
             # Save weights
             self.save_checkpoint(epoch)
+
+        # Disable wandb
+        wandb.finish()
 
     def load_checkpoint(self) -> None:
         def _load(weights_path: str, model_type: str) -> None:
@@ -414,11 +431,11 @@ class Trainer:
         torch.save(g_state_dict, g_weights_path)
         torch.save(d_state_dict, d_weights_path)
 
-    def visual_on_idx(self, dix: int):
+    def visual_on_idx(self, idx: int):
         with torch.no_grad():
             imgs_fake_list = [self.imgs_fixed]
             for label_fixed in self.label_fixed_list:
                 imgs_fake_list.append(self.g_model(self.imgs_fixed, label_fixed))
             imgs_concat = torch.cat(imgs_fake_list, dim=3)
-            save_sample_path = os.path.join(self.save_visuals_dir, f"iter-{dix:06d}.jpg")
+            save_sample_path = os.path.join(self.save_visuals_dir, f"iter-{idx:06d}.jpg")
             save_image(denorm(imgs_concat.data.cpu()), save_sample_path, nrow=1, padding=0)

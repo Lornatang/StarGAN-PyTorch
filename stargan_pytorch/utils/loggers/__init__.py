@@ -13,10 +13,7 @@
 # ==============================================================================
 from .average_meter import *
 from .progress_meter import *
-from .summary import *
 
 __all__ = [
-    "AverageMeter",
-    "ProgressMeter",
-    "Summary",
+    "Summary", "AverageMeter", "ProgressMeter",
 ]
