@@ -46,19 +46,21 @@ pip install -e .
 
 ## All pretrained model weights
 
-- [g_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-128x128.pth.tar?download=true)
-- [g_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-256x256.pth.tar?download=true)
-- [d_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-128x128.pth.tar?download=true)
-- [d_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-256x256.pth.tar?download=true)
+- [g_celeba-128x128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-128x128.pth.tar?download=true)
+- [g_celeba-256x256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-256x256.pth.tar?download=true)
+- [d_celeba-128x128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-128x128.pth.tar?download=true)
+- [d_celeba-256x256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-256x256.pth.tar?download=true)
 
 ## Test (e.g. CelebA-128x128)
 
 ```shell
-# Download g_celeba128 model weights to `./results/pretrained_models`
-wget https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba128.pth.tar?download=true -O ./results/pretrained_models/g_celeba128.pth.tar
+# Download g_celeba-128x128 model weights to `./results/pretrained_models`
+wget https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-128x128.pth.tar?download=true -O ./results/pretrained_models/g_celeba-128x128.pth.tar
 python ./tools/test.py ./configs/celeba_128x128.yaml
 # Result will be saved to `./results/test/celeba128`
 ```
+
+original -> Black_Hair -> Blond_Hair -> Brown_Hair -> Male -> Young
 
 <div align="center">
 <img src="figure/celeba_128.jpg" width="768">
@@ -75,7 +77,7 @@ python3 ./tools/train.py ./configs/celeba_128x128.yaml
 python3 ./tools/train.py ./configs/celeba_256x256.yaml
 ```
 
-The training results will be saved to `./results/train/celeba128` or `./results/train/celeba256`.
+The training results will be saved to `./results/train/celeba_128x128` or `./results/train/celeba_256x256`.
 
 ## Contributing
 

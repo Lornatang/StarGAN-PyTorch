@@ -29,8 +29,8 @@ def get_opts() -> argparse.Namespace:
     parser.add_argument(
         "--weights",
         type=str,
-        default="./results/pretrained_models/g_celeba128.pth.tar",
-        help="Model weights file path. Default: `./results/pretrained_models/g_celeba128.pth.tar`",
+        default="./results/pretrained_models/g_celeba-128x128.pth.tar",
+        help="Model weights file path. Default: `./results/pretrained_models/g_celeba-128x128.pth.tar`",
     )
     parser.add_argument("-i", "--inputs",
                         type=str,
