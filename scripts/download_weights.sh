@@ -1,19 +1,19 @@
 FILE=$1
 
 if [ "$FILE" == "StarGAN-CelebA-128x128" ]; then
-  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/StarGAN-CelebA-128x128.pth.tar"
+  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-128x128.pth.tar"
   FILE_PATH=./results/pretrained_models
   wget $URL -P $FILE_PATH
 elif [ "$FILE" == "StarGAN-CelebA-256x256" ]; then
-  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/StarGAN-CelebA-256x256.pth.tar"
+  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-256x256.pth.tar"
   FILE_PATH=./results/pretrained_models
   wget $URL -P $FILE_PATH
 elif [ "$FILE" == "PathDiscriminator-CelebA-128x128" ]; then
-  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/PathDiscriminator-CelebA-128x128.pth.tar"
+  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-128x128.pth.tar"
   FILE_PATH=./results/pretrained_models
   wget $URL -P $FILE_PATH
 elif [ "$FILE" == "PathDiscriminator-CelebA-256x256" ]; then
-  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/PathDiscriminator-CelebA-256x256.pth.tar"
+  URL="https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-256x256.pth.tar"
   FILE_PATH=./results/pretrained_models
   wget $URL -P $FILE_PATH
 else

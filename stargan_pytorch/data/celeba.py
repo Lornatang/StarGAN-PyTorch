@@ -15,6 +15,7 @@ import os
 
 import torch
 from PIL import Image
+from torch import Tensor
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -58,7 +59,7 @@ class CelebADataset(Dataset):
 
             self.img_dataset.append([filename, label])
 
-    def __getitem__(self, batch_index: int) -> (torch.Tensor, torch.Tensor):
+    def __getitem__(self, batch_index: int) -> (Tensor, Tensor):
         """Return one image and its corresponding attribute label."""
         file_name, label = self.img_dataset[batch_index]
 
@@ -67,7 +68,7 @@ class CelebADataset(Dataset):
         img = self.transforms(img)
         label = torch.FloatTensor(label)
 
-        return {"img": img, "label": label}
+        return img, label
 
     def __len__(self):
         """Return the number of images."""

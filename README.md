@@ -31,6 +31,7 @@ This repository contains an op-for-op PyTorch reimplementation of [StarGAN: Unif
 
 ```bash
 pip install stargan_pytorch -i https://pypi.org/simple
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
 ### Local Install
@@ -38,23 +39,24 @@ pip install stargan_pytorch -i https://pypi.org/simple
 ```bash
 git clone https://github.com/Lornatang/StarGAN-PyTorch.git
 cd StarGAN-PyTorch
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 pip install -e .
 ```
 
 ## All pretrained model weights
 
-- [g_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba128.pth.tar?download=true)
-- [g_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba256.pth.tar?download=true)
-- [d_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba128.pth.tar?download=true)
-- [d_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba256.pth.tar?download=true)
+- [g_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-128x128.pth.tar?download=true)
+- [g_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba-256x256.pth.tar?download=true)
+- [d_celeba128](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-128x128.pth.tar?download=true)
+- [d_celeba256](https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/d_celeba-256x256.pth.tar?download=true)
 
 ## Test (e.g. CelebA-128x128)
 
 ```shell
 # Download g_celeba128 model weights to `./results/pretrained_models`
 wget https://huggingface.co/goodfellowliu/StarGAN-PyTorch/resolve/main/g_celeba128.pth.tar?download=true -O ./results/pretrained_models/g_celeba128.pth.tar
-python ./tools/test.py ./configs/CelebA128.yaml
+python ./tools/test.py ./configs/celeba_128x128.yaml
 # Result will be saved to `./results/test/celeba128`
 ```
 
@@ -68,9 +70,9 @@ Please refer to `README.md` in the `data` directory for the method of making a d
 
 ```shell
 # If you want to train StarGAN-CelebA-128x128, run this command
-python3 ./tools/train.py ./configs/CelebA128.yaml
+python3 ./tools/train.py ./configs/celeba_128x128.yaml
 # If you want to train StarGAN-CelebA-256x256, run this command
-python3 ./tools/train.py ./configs/CelebA256.yaml
+python3 ./tools/train.py ./configs/celeba_256x256.yaml
 ```
 
 The training results will be saved to `./results/train/celeba128` or `./results/train/celeba256`.

@@ -1,0 +1,90 @@
+# experiment name
+EXP_NAME: celeba_256x256
+# random number seed
+SEED: 42
+# run device model
+DEVICE_ID: 0
+
+# Model define
+MODEL:
+  G:
+    C_DIM: 5
+    COMPILED: True
+  D:
+    IMG_SIZE: 256
+    C_DIM: 5
+    COMPILED: False
+
+TRAIN:
+  DATASET:
+    ROOT: "./data/celeba/images"
+    CROP_IMG_SIZE: 178
+    RESIZE_IMG_SIZE: 256
+    ATTR_PATH: "./data/celeba/list_attr_celeba.txt"
+    SELECTED_ATTRS: [ "Black_Hair", "Blond_Hair", "Brown_Hair", "Male", "Young" ]
+    NORMALIZE:
+      MEAN: (0.5, 0.5, 0.5)
+      STD: (0.5, 0.5, 0.5)
+
+  CHECKPOINT:
+    G:
+      WEIGHTS: ""
+    D:
+      WEIGHTS: ""
+
+  HYP:
+    IMGS_PER_BATCH: 16
+
+    EPOCHS: 16
+
+  OPTIM:
+    G:
+      LR: 0.0001
+      BETAS: (0.5, 0.999)
+      WEIGHT_DECAY: 0.00005
+    D:
+      LR: 0.0001
+      BETAS: (0.5, 0.999)
+      WEIGHT_DECAY: 0.00005
+
+    LR_SCHEDULER:
+      G:
+        NAME: "step_lr"
+        STEP_SIZE: 8
+        GAMMA: 0.5
+      D:
+        NAME: "step_lr"
+        STEP_SIZE: 8
+        GAMMA: 0.5
+
+  LOSSES:
+    CLASS_LOSS:
+      WEIGHT: [ 1.0 ]
+    GP_LOSS:
+      WEIGHT: [ 10.0 ]
+    REC_LOSS:
+      WEIGHT: [ 10.0 ]
+
+  N_CRITIC: 5  # Update D every n_critic iterations
+
+  PRINT_FREQ: 100
+  VISUAL_FREQ: 1000
+  SAVE_EVERY_EPOCH: 5
+
+VAL:
+  DATASET:
+    ROOT: "./data/celeba/images"
+    CROP_IMG_SIZE: 178
+    RESIZE_IMG_SIZE: 256
+    ATTR_PATH: "./data/celeba/list_attr_celeba.txt"
+    SELECTED_ATTRS: [ "Black_Hair", "Blond_Hair", "Brown_Hair", "Male", "Young" ]
+    NORMALIZE:
+      MEAN: (0.5, 0.5, 0.5)
+      STD: (0.5, 0.5, 0.5)
+
+  CHECKPOINT:
+    G:
+      WEIGHTS: "./results/pretrained_models/g_celeba-256256.pth.tar"
+
+  HYP:
+    IMGS_PER_BATCH: 1

@@ -24,12 +24,8 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from torchvision.utils import save_image
 
-from stargan_pytorch.data.celeba import CelebADataset
-from stargan_pytorch.data.prefetcher import CPUPrefetcher, CUDAPrefetcher
-from stargan_pytorch.models.losses import GradientPenaltyLoss
-from stargan_pytorch.models.path_discriminator import path_discriminator
-from stargan_pytorch.models.stargan import generator
-from stargan_pytorch.models.utils import load_resume_state_dict, load_state_dict
+from stargan_pytorch.data import CelebADataset, CPUPrefetcher, CUDAPrefetcher
+from stargan_pytorch.models import generator, path_discriminator, GradientPenaltyLoss, load_state_dict
 from stargan_pytorch.utils import AverageMeter, ProgressMeter, create_labels, denorm
 
 
@@ -48,15 +44,14 @@ class Trainer:
         self.save_visuals_dir = save_visuals_dir
         self.tblogger = tblogger
 
-        self.start_epoch = 0
         self.class_loss_weight = None
         self.gp_loss_weight = None
         self.rec_loss_weight = None
 
         self.g_model, self.ema_g_model, self.d_model = self.build_model()
-        self.class_criterion, self.gp_criterion, self.rec_criterion = self.define_loss()
+        self.class_criterion, self.gp_criterion, self.rec_criterion = self.define_criterion()
         self.g_optim, self.d_optim = self.define_optim()
-        self.g_scheduler, self.d_scheduler = self.define_scheduler()
+        self.g_lr_scheduler, self.d_lr_scheduler = self.define_lr_scheduler()
         self.dataloader = self.load_datasets()
         self.batches = len(self.dataloader)
 
@@ -69,7 +64,9 @@ class Trainer:
         self.label_fixed_list = create_labels(self.label_fixed,
                                               self.config["MODEL"]["G"]["C_DIM"],
                                               "CelebA",  # Only support CelebA dataset
-                                              self.config["DATASETS"]["SELECTED_ATTRS"])
+                                              self.config["TRAIN"]["DATASET"]["SELECTED_ATTRS"])
+
+        self.start_epoch = 0
 
     def build_model(self) -> tuple:
         """Build the generator, discriminator and exponential average generator models
@@ -77,7 +74,6 @@ class Trainer:
         Returns:
             tuple: generator, exponential average generator and discriminator models
         """
-
         g_model = generator(c_dim=self.config["MODEL"]["G"]["C_DIM"])
         d_model = path_discriminator(img_size=self.config["MODEL"]["D"]["IMG_SIZE"], c_dim=self.config["MODEL"]["D"]["C_DIM"])
 
@@ -97,13 +93,12 @@ class Trainer:
 
         return g_model, ema_g_model, d_model
 
-    def define_loss(self) -> tuple:
+    def define_criterion(self) -> tuple[nn.BCEWithLogitsLoss, GradientPenaltyLoss, nn.L1Loss]:
         """Define the loss function
 
         Returns:
             tuple: classification loss, gradient penalty loss and reconstruction loss
         """
-
         class_criterion = nn.BCEWithLogitsLoss()
         gp_criterion = GradientPenaltyLoss()
         rec_criterion = nn.L1Loss()
@@ -119,47 +114,54 @@ class Trainer:
 
         return class_criterion, gp_criterion, rec_criterion
 
-    def define_optim(self) -> tuple:
+    def define_optim(self) -> tuple[optim, optim]:
         """Define the optimizer
 
         Returns:
             torch.optim.Optimizer: generator optimizer, discriminator optimizer
         """
-
-        self.g_optim = optim.Adam(
+        g_optim = optim.Adam(
             self.g_model.parameters(),
             self.config["TRAIN"]["OPTIM"]["G"]["LR"],
-            (self.config["TRAIN"]["OPTIM"]["G"]["BETA1"], self.config["TRAIN"]["OPTIM"]["G"]["BETA2"]),
+            eval(self.config["TRAIN"]["OPTIM"]["G"]["BETAS"]),
             weight_decay=self.config["TRAIN"]["OPTIM"]["G"]["WEIGHT_DECAY"],
         )
-        self.d_optim = optim.Adam(
+        d_optim = optim.Adam(
             self.d_model.parameters(),
             self.config["TRAIN"]["OPTIM"]["D"]["LR"],
-            (self.config["TRAIN"]["OPTIM"]["D"]["BETA1"], self.config["TRAIN"]["OPTIM"]["D"]["BETA2"]),
+            eval(self.config["TRAIN"]["OPTIM"]["D"]["BETAS"]),
             weight_decay=self.config["TRAIN"]["OPTIM"]["D"]["WEIGHT_DECAY"],
         )
 
-        return self.g_optim, self.d_optim
+        return g_optim, d_optim
 
-    def define_scheduler(self) -> tuple:
+    def define_lr_scheduler(self) -> tuple[optim.lr_scheduler, optim.lr_scheduler]:
         """Define the scheduler
 
         Returns:
             torch.optim.lr_scheduler: generator scheduler, discriminator scheduler
         """
+        g_lr_scheduler_name = self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["G"]["NAME"]
+        if g_lr_scheduler_name == "step":
+            g_lr_scheduler = optim.lr_scheduler.StepLR(
+                self.g_optim,
+                self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["G"]["STEP_SIZE"],
+                self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["G"]["GAMMA"],
+            )
+        else:
+            raise NotImplementedError(f"Unsupported generator scheduler: {g_lr_scheduler_name}")
 
-        g_scheduler = optim.lr_scheduler.StepLR(
-            self.g_optim,
-            self.config["TRAIN"]["LR_SCHEDULER"]["G"]["STEP_SIZE"],
-            self.config["TRAIN"]["LR_SCHEDULER"]["G"]["GAMMA"],
-        )
-        d_scheduler = optim.lr_scheduler.StepLR(
-            self.d_optim,
-            self.config["TRAIN"]["LR_SCHEDULER"]["D"]["STEP_SIZE"],
-            self.config["TRAIN"]["LR_SCHEDULER"]["D"]["GAMMA"],
-        )
+        d_lr_scheduler_name = self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["D"]["NAME"]
+        if d_lr_scheduler_name == "step":
+            d_lr_scheduler = optim.lr_scheduler.StepLR(
+                self.d_optim,
+                self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["D"]["STEP_SIZE"],
+                self.config["TRAIN"]["OPTIM"]["LR_SCHEDULER"]["D"]["GAMMA"],
+            )
+        else:
+            raise NotImplementedError(f"Unsupported discriminator scheduler: {d_lr_scheduler_name}")
 
-        return g_scheduler, d_scheduler
+        return g_lr_scheduler, d_lr_scheduler
 
     def load_datasets(self) -> CPUPrefetcher or CUDAPrefetcher:
         """Load the dataset and generate the dataset iterator
@@ -169,18 +171,20 @@ class Trainer:
         """
 
         transform = transforms.Compose([
-            transforms.CenterCrop(self.config["DATASETS"]["CROP_IMG_SIZE"]),
-            transforms.Resize(self.config["DATASETS"]["RESIZE_IMG_SIZE"]),
+            transforms.CenterCrop(self.config["TRAIN"]["DATASET"]["CROP_IMG_SIZE"]),
+            transforms.Resize(self.config["TRAIN"]["DATASET"]["RESIZE_IMG_SIZE"]),
             transforms.RandomHorizontalFlip(0.5),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            transforms.Normalize(
+                eval(self.config["TRAIN"]["DATASET"]["NORMALIZE"]["MEAN"]),
+                eval(self.config["TRAIN"]["DATASET"]["NORMALIZE"]["STD"])),
         ])
         # Load the train dataset
         datasets = CelebADataset(
-            self.config["DATASETS"]["IMGS_DIR"],
+            self.config["TRAIN"]["DATASET"]["ROOT"],
             transform,
-            self.config["DATASETS"]["ATTR_PATH"],
-            self.config["DATASETS"]["SELECTED_ATTRS"],
+            self.config["TRAIN"]["DATASET"]["ATTR_PATH"],
+            self.config["TRAIN"]["DATASET"]["SELECTED_ATTRS"],
         )
         # generate dataset iterator
         dataloader = DataLoader(datasets,
@@ -269,80 +273,6 @@ class Trainer:
 
         return d_loss, d_loss_real, d_loss_fake, d_loss_class, d_loss_gp
 
-    def load_checkpoint(self) -> None:
-        """Load the checkpoint"""
-
-        pretrained_g_model_weights_path = self.config["TRAIN"]["CHECKPOINT"]["G"]["PRETRAINED_MODEL_WEIGHTS_PATH"]
-        pretrained_d_model_weights_path = self.config["TRAIN"]["CHECKPOINT"]["D"]["PRETRAINED_MODEL_WEIGHTS_PATH"]
-        resume_g_model_weights_path = self.config["TRAIN"]["CHECKPOINT"]["G"]["RESUME_MODEL_WEIGHTS_PATH"]
-        resume_d_model_weights_path = self.config["TRAIN"]["CHECKPOINT"]["D"]["RESUME_MODEL_WEIGHTS_PATH"]
-
-        g_compile_model = self.config["MODEL"]["G"]["COMPILED"]
-        d_compile_model = self.config["MODEL"]["D"]["COMPILED"]
-
-        # Load pretrained model weights
-        if pretrained_g_model_weights_path != "" and os.path.exists(pretrained_g_model_weights_path):
-            print(f"Load checkpoint from '{pretrained_g_model_weights_path}'")
-            state_dict = torch.load(pretrained_g_model_weights_path, map_location=self.device)["state_dict"]
-            self.g_model = load_state_dict(self.g_model, state_dict, g_compile_model)
-        if pretrained_d_model_weights_path != "" and os.path.exists(pretrained_d_model_weights_path):
-            print(f"Load checkpoint from '{pretrained_d_model_weights_path}'")
-            state_dict = torch.load(pretrained_d_model_weights_path, map_location=self.device)["state_dict"]
-            self.d_model = load_state_dict(self.d_model, state_dict, d_compile_model)
-
-        # Load resume model weights
-        if resume_g_model_weights_path != "":
-            print(f"Load resume checkpoint from '{resume_g_model_weights_path}'")
-            self.start_epoch, self.g_model, self.ema_g_model, self.g_optim, self.d_scheduler = load_resume_state_dict(self.g_model,
-                                                                                                                      self.ema_g_model,
-                                                                                                                      resume_g_model_weights_path,
-                                                                                                                      g_compile_model)
-        if resume_d_model_weights_path != "":
-            print(f"Load resume checkpoint from '{resume_d_model_weights_path}'")
-            self.start_epoch, self.d_model, _, self.d_optim, self.d_scheduler = load_resume_state_dict(self.d_model,
-                                                                                                       None,
-                                                                                                       resume_d_model_weights_path,
-                                                                                                       d_compile_model)
-
-    def visual_on_iters(self, iters: int):
-        with torch.no_grad():
-            imgs_fake_list = [self.imgs_fixed]
-            for label_fixed in self.label_fixed_list:
-                imgs_fake_list.append(self.g_model(self.imgs_fixed, label_fixed))
-            imgs_concat = torch.cat(imgs_fake_list, dim=3)
-            save_sample_path = os.path.join(self.save_visuals_dir, f"iter-{iters:06d}.jpg")
-            save_image(denorm(imgs_concat.data.cpu()), save_sample_path, nrow=1, padding=0)
-
-    def save_checkpoint(self, epoch: int) -> None:
-        # Automatically save models weights
-        is_last = (epoch + 1) == self.config["TRAIN"]["HYP"]["EPOCHS"]
-
-        g_state_dict = {
-            "epoch": epoch + 1,
-            "state_dict": self.g_model.state_dict(),
-            "ema_state_dict": self.ema_g_model.state_dict(),
-            "optimizer": self.g_optim,
-            "scheduler": self.g_scheduler,
-        }
-        d_state_dict = {
-            "epoch": epoch + 1,
-            "state_dict": self.d_model.state_dict(),
-            "ema_state_dict": None,
-            "optimizer": self.d_optim,
-            "scheduler": self.d_scheduler
-        }
-
-        if self.config["TRAIN"]["SAVE_EVERY_EPOCH"] and not is_last:
-            g_weights_path = os.path.join(self.save_weights_dir, f"g_epoch_{epoch}.pth.tar")
-            d_weights_path = os.path.join(self.save_weights_dir, f"d_epoch_{epoch}.pth.tar")
-            torch.save(g_state_dict, g_weights_path)
-            torch.save(d_state_dict, d_weights_path)
-        else:
-            g_weights_path = os.path.join(self.save_weights_dir, f"g_last.pth.tar")
-            d_weights_path = os.path.join(self.save_weights_dir, f"d_last.pth.tar")
-            torch.save(g_state_dict, g_weights_path)
-            torch.save(d_state_dict, d_weights_path)
-
     def train_on_epoch(self, epoch: int):
         # The information printed by the progress bar
         global g_loss, g_loss_fake, g_loss_class, g_loss_rec
@@ -359,18 +289,18 @@ class Trainer:
         self.d_model.train()
 
         # Initialize data batches
-        batch_index = 0
-        # Set the dataset iterator pointer to 0
+        batch_idx = 0
         self.dataloader.reset()
-        # Record the start time of training a batch
         end = time.time()
-        # load the first batch of data
         batch_data = self.dataloader.next()
 
         while batch_data is not None:
+            total_batch_idx = batch_idx + (self.batches * epoch)
             # Load batches of data
-            imgs = batch_data["img"].to(self.device, non_blocking=True)
-            src_label = batch_data["label"].to(self.device, non_blocking=True)
+            imgs, src_label = batch_data[0], batch_data[1]
+            if self.device.type == "cuda":
+                imgs = imgs.to(self.device, non_blocking=True)
+                src_label = src_label.to(self.device, non_blocking=True)
 
             # Generate target domain labels randomly.
             rand_index = torch.randperm(src_label.size(0))
@@ -383,42 +313,40 @@ class Trainer:
             d_loss, d_loss_real, d_loss_fake, d_loss_class, d_loss_gp = self.update_d(imgs, src_label, trg_label)
 
             # start training the generator model
-            if batch_index % self.config["TRAIN"]["N_CRITIC"] == 0:
+            if (batch_idx + 1) % self.config["TRAIN"]["N_CRITIC"] == 0 or batch_idx == 0 or (batch_idx + 1) == self.batches:
                 g_loss, g_loss_fake, g_loss_class, g_loss_rec = self.update_g(imgs, src_label, trg_label)
 
             # record the loss value
-            batch_size = imgs.shape[0]
-            d_losses.update(d_loss.item(), batch_size)
-            g_losses.update(g_loss.item(), batch_size)
+            d_losses.update(d_loss.item(), imgs.size(0))
+            g_losses.update(g_loss.item(), imgs.size(0))
 
             # Record the total time of training a batch
             batch_time.update(time.time() - end)
             end = time.time()
 
             # Output training log information once
-            iters = batch_index + epoch * self.batches
-            if batch_index % self.config["TRAIN"]["PRINT_FREQ"] == 0:
+            if batch_idx % self.config["TRAIN"]["PRINT_FREQ"] == 0:
                 # write training log
-                self.tblogger.add_scalar("Train/D_Loss", d_loss.item(), iters)
-                self.tblogger.add_scalar("Train/D(GT)_Loss", d_loss_real.item(), iters)
-                self.tblogger.add_scalar("Train/D(G(z))_Loss", d_loss_fake.item(), iters)
-                self.tblogger.add_scalar("Train/D_Class_Loss", d_loss_class.item(), iters)
-                self.tblogger.add_scalar("Train/D_GP_Loss", d_loss_gp.item(), iters)
-                self.tblogger.add_scalar("Train/G_Loss", g_loss.item(), iters)
-                self.tblogger.add_scalar("Train/G(G(z))_Loss", g_loss_fake.item(), iters)
-                self.tblogger.add_scalar("Train/G_Class_Loss", g_loss_class.item(), iters)
-                self.tblogger.add_scalar("Train/G_REC_Loss", g_loss_rec.item(), iters)
-                progress.display(batch_index + 1)
+                self.tblogger.add_scalar("Train/D_Loss", d_loss.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/D(GT)_Loss", d_loss_real.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/D(G(z))_Loss", d_loss_fake.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/D_Class_Loss", d_loss_class.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/D_GP_Loss", d_loss_gp.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/G_Loss", g_loss.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/G(G(z))_Loss", g_loss_fake.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/G_Class_Loss", g_loss_class.item(), total_batch_idx)
+                self.tblogger.add_scalar("Train/G_REC_Loss", g_loss_rec.item(), total_batch_idx)
+                progress.display(batch_idx + 1)
 
             # Save the generated samples
-            if (iters + 1) % self.config["TRAIN"]["VISUAL_FREQ"] == 0:
-                self.visual_on_iters(iters + 1)
+            if (total_batch_idx + 1) % self.config["TRAIN"]["VISUAL_FREQ"] == 0:
+                self.visual_on_idx(total_batch_idx + 1)
 
             # Preload the next batch of data
             batch_data = self.dataloader.next()
 
             # After training a batch of data, add 1 to the number of data batches to ensure that the terminal prints data normally
-            batch_index += 1
+            batch_idx += 1
 
     def train(self):
         self.load_checkpoint()
@@ -427,8 +355,70 @@ class Trainer:
             self.train_on_epoch(epoch)
 
             # Update learning rate scheduler
-            self.g_scheduler.step()
-            self.d_scheduler.step()
+            self.g_lr_scheduler.step()
+            self.d_lr_scheduler.step()
 
             # Save weights
             self.save_checkpoint(epoch)
+
+    def load_checkpoint(self) -> None:
+        def _load(weights_path: str, model_type: str) -> None:
+            if os.path.isfile(weights_path):
+                with open(weights_path, "rb") as f:
+                    checkpoint = torch.load(f, map_location=self.device)
+                self.start_epoch = checkpoint.get("epoch", 0)
+                if model_type == "g":
+                    load_state_dict(self.g_model, checkpoint.get("state_dict", {}))
+                    load_state_dict(self.ema_g_model, checkpoint.get("ema_state_dict", {}))
+                    load_state_dict(self.g_optim, checkpoint.get("optim_state_dict", {}))
+                    load_state_dict(self.g_lr_scheduler, checkpoint.get("lr_scheduler_state_dict", {}))
+                elif model_type == "d":
+                    load_state_dict(self.d_model, checkpoint.get("state_dict", {}))
+                    load_state_dict(self.d_optim, checkpoint.get("optim_state_dict", {}))
+                    load_state_dict(self.d_lr_scheduler, checkpoint.get("lr_scheduler_state_dict", {}))
+                print(f"Loaded checkpoint '{weights_path}'")
+            else:
+                raise FileNotFoundError(f"No checkpoint found at '{weights_path}'")
+
+        g_weights = self.config["TRAIN"]["CHECKPOINT"]["G"]["WEIGHTS"]
+        d_weights = self.config["TRAIN"]["CHECKPOINT"]["D"]["WEIGHTS"]
+
+        if g_weights:
+            _load(g_weights, "g")
+        if d_weights:
+            _load(d_weights, "d")
+
+    def save_checkpoint(self, epoch: int) -> None:
+        # Automatically save models weights
+        g_state_dict = {
+            "epoch": epoch + 1,
+            "state_dict": self.g_model.state_dict(),
+            "ema_state_dict": self.ema_g_model.state_dict(),
+            "optim_state_dict": self.g_optim.state_dict(),
+        }
+        d_state_dict = {
+            "epoch": epoch + 1,
+            "state_dict": self.d_model.state_dict(),
+            "ema_state_dict": None,
+            "optim_state_dict": self.d_optim.state_dict(),
+        }
+
+        if (epoch + 1) % self.config["TRAIN"]["SAVE_EVERY_EPOCH"] == 0:
+            g_weights_path = os.path.join(self.save_weights_dir, f"g_epoch_{epoch + 1:06d}.pth.tar")
+            d_weights_path = os.path.join(self.save_weights_dir, f"d_epoch_{epoch + 1:06d}.pth.tar")
+            torch.save(g_state_dict, g_weights_path)
+            torch.save(d_state_dict, d_weights_path)
+
+        g_weights_path = os.path.join(self.save_weights_dir, f"g_last.pth.tar")
+        d_weights_path = os.path.join(self.save_weights_dir, f"d_last.pth.tar")
+        torch.save(g_state_dict, g_weights_path)
+        torch.save(d_state_dict, d_weights_path)
+
+    def visual_on_idx(self, dix: int):
+        with torch.no_grad():
+            imgs_fake_list = [self.imgs_fixed]
+            for label_fixed in self.label_fixed_list:
+                imgs_fake_list.append(self.g_model(self.imgs_fixed, label_fixed))
+            imgs_concat = torch.cat(imgs_fake_list, dim=3)
+            save_sample_path = os.path.join(self.save_visuals_dir, f"iter-{dix:06d}.jpg")
+            save_image(denorm(imgs_concat.data.cpu()), save_sample_path, nrow=1, padding=0)
